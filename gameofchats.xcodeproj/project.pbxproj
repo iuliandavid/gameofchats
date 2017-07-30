@@ -8,20 +8,22 @@
 
 /* Begin PBXBuildFile section */
 		B80D39A31F2E2C0D00A4C3FF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80D39A21F2E2C0D00A4C3FF /* AppDelegate.swift */; };
-		B80D39A51F2E2C0D00A4C3FF /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B80D39A41F2E2C0D00A4C3FF /* ViewController.swift */; };
 		B80D39A81F2E2C0D00A4C3FF /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B80D39A61F2E2C0D00A4C3FF /* Main.storyboard */; };
 		B80D39AA1F2E2C0D00A4C3FF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B80D39A91F2E2C0D00A4C3FF /* Assets.xcassets */; };
 		B80D39AD1F2E2C0D00A4C3FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B80D39AB1F2E2C0D00A4C3FF /* LaunchScreen.storyboard */; };
+		B89F99701F2E5159003117AA /* LoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B89F996F1F2E5159003117AA /* LoginController.swift */; };
+		B89F99741F2E51EA003117AA /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B89F99731F2E51EA003117AA /* ViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		B80D399F1F2E2C0D00A4C3FF /* gameofchats.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = gameofchats.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B80D39A21F2E2C0D00A4C3FF /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		B80D39A41F2E2C0D00A4C3FF /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		B80D39A71F2E2C0D00A4C3FF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		B80D39A91F2E2C0D00A4C3FF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B80D39AC1F2E2C0D00A4C3FF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		B80D39AE1F2E2C0D00A4C3FF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B89F996F1F2E5159003117AA /* LoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LoginController.swift; path = gameofchats/Controller/LoginController.swift; sourceTree = SOURCE_ROOT; };
+		B89F99731F2E51EA003117AA /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ViewController.swift; path = Controller/ViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,13 +57,22 @@
 			isa = PBXGroup;
 			children = (
 				B80D39A21F2E2C0D00A4C3FF /* AppDelegate.swift */,
-				B80D39A41F2E2C0D00A4C3FF /* ViewController.swift */,
 				B80D39A61F2E2C0D00A4C3FF /* Main.storyboard */,
 				B80D39A91F2E2C0D00A4C3FF /* Assets.xcassets */,
 				B80D39AB1F2E2C0D00A4C3FF /* LaunchScreen.storyboard */,
 				B80D39AE1F2E2C0D00A4C3FF /* Info.plist */,
+				B89F99721F2E517A003117AA /* Controller */,
 			);
 			path = gameofchats;
+			sourceTree = "<group>";
+		};
+		B89F99721F2E517A003117AA /* Controller */ = {
+			isa = PBXGroup;
+			children = (
+				B89F996F1F2E5159003117AA /* LoginController.swift */,
+				B89F99731F2E51EA003117AA /* ViewController.swift */,
+			);
+			name = Controller;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -135,8 +146,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B80D39A51F2E2C0D00A4C3FF /* ViewController.swift in Sources */,
+				B89F99741F2E51EA003117AA /* ViewController.swift in Sources */,
 				B80D39A31F2E2C0D00A4C3FF /* AppDelegate.swift in Sources */,
+				B89F99701F2E5159003117AA /* LoginController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -210,7 +222,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -261,7 +273,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
