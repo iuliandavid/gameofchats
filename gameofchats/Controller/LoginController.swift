@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Firebase
 
 class LoginController: UIViewController {
     
@@ -26,6 +27,9 @@ class LoginController: UIViewController {
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitleColor(UIColor.white, for: UIControlState())
         button.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
+        
+        // add action
+        button.addTarget(self, action: #selector(register), for: .touchUpInside)
         return button
     }()
     
@@ -34,6 +38,8 @@ class LoginController: UIViewController {
         let tf = UITextField()
         tf.placeholder = "Name"
         tf.translatesAutoresizingMaskIntoConstraints = false
+        tf.autocorrectionType = .no
+        tf.returnKeyType = .next
         return tf
     }()
     
@@ -48,6 +54,8 @@ class LoginController: UIViewController {
         let tf = UITextField()
         tf.placeholder = "Email"
         tf.translatesAutoresizingMaskIntoConstraints = false
+        tf.autocorrectionType = .no
+        tf.returnKeyType = .next
         return tf
     }()
     
@@ -63,6 +71,7 @@ class LoginController: UIViewController {
         tf.placeholder = "Password"
         tf.translatesAutoresizingMaskIntoConstraints = false
         tf.isSecureTextEntry = true
+        tf.returnKeyType = .next
         return tf
     }()
     
@@ -155,6 +164,50 @@ class LoginController: UIViewController {
     
     override var preferredStatusBarStyle : UIStatusBarStyle {
         return .lightContent
+    }
+    
+    //MARK - Actions
+    @objc private func register() {
+        guard let email = emailTextField.text, let password = passwordTextField.text, let name = nameTextField.text else {
+            let alertController = UIAlertController(title: "Error", message: "Invalid Email or Password!", preferredStyle: .alert)
+            let action = UIAlertAction(title: "OK", style: .default, handler: nil)
+            alertController.addAction(action)
+            present(alertController, animated: true, completion: {
+                self.passwordTextField.text = ""
+            })
+            return
+        }
+        Auth.auth().createUser(withEmail: email, password: password) { (user, error) in
+            if error != nil {
+                let alertController = UIAlertController(title: "Error", message: error!.localizedDescription, preferredStyle: .alert)
+                let action = UIAlertAction(title: "OK", style: .default, handler: { action in
+                    self.passwordTextField.text = ""
+                })
+                alertController.addAction(action)
+                self.present(alertController, animated: true, completion: nil)
+            } else {
+                guard let uid = user?.uid else {
+                    return
+                }
+                // persist the authenticated user to "goc_users" db
+                let messagesDB = DBConstants.getDB(reference: DBConstants.DBReferenceUsers).child(uid)
+                let userValue = ["email" : email, "name" : name]
+                messagesDB.setValue(userValue, withCompletionBlock: { (err, ref) in
+                    if err != nil {
+                        let alertController = UIAlertController(title: "Error", message: err!.localizedDescription, preferredStyle: .alert)
+                        let action = UIAlertAction(title: "OK", style: .default, handler: nil)
+                        alertController.addAction(action)
+                        self.present(alertController, animated: true, completion: {
+                            self.passwordTextField.text = ""
+                        })
+                        return
+                    }
+                    
+                    print("User saved")
+                })
+                
+            }
+        }
     }
     
 }
