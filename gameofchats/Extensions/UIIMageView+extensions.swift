@@ -15,13 +15,15 @@ let imageCache = NSCache<NSString, UIImage>()
 extension UIImageView {
     func loadImageUsingCache(withURLString urlString: String) {
         
+        self.image = nil
+        
         // we have to convert it to NSString since NSCache does not support String
         let nsStringURL = NSString(string: urlString)
         
         // search first in cache
         if let image = imageCache.object(forKey: nsStringURL) {
             self.image = image
-           return
+            return
         }
         
         // if not found search in Firebase
