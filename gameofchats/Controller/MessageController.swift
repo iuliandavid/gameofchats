@@ -49,12 +49,40 @@ class MessageController: UITableViewController {
                 strongSelf.user?.name = snapshotValue["name"]
                 strongSelf.user?.email = snapshotValue["email"]
                 strongSelf.user?.imageURL = snapshotValue["profileImageUrl"]
-                if let profileImageURL = strongSelf.user?.imageURL {
-                    strongSelf.profileImageView.loadImageUsingCache(withURLString: profileImageURL)
-                }
-                strongSelf.navigationItem.title = snapshotValue["name"]
+                strongSelf.setUpNavigationBar()
             }
         })
+    }
+    
+    fileprivate func setUpNavigationBar() {
+        guard let user = user, let profileImageURL = user.imageURL else {
+            return
+        }
+        profileImageView.loadImageUsingCache(withURLString: profileImageURL)
+        
+        let titleView = UIView()
+        titleView.frame = CGRect(x: 0, y: 0, width: 100, height: 40)
+        titleView.addSubview(profileImageView)
+        let label = UILabel(frame: CGRect(x: 0, y: 0, width: 58, height: 40))
+        label.text = user.name
+        titleView.addSubview(label)
+        
+        navigationItem.titleView = titleView
+        
+        
+        
+        profileImageView.leftAnchor.constraint(equalTo: titleView.leftAnchor).isActive = true
+        profileImageView.centerYAnchor.constraint(equalTo: titleView.centerYAnchor).isActive = true
+        profileImageView.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        profileImageView.heightAnchor.constraint(equalToConstant: 40).isActive = true
+        
+        label.leftAnchor.constraint(equalTo: profileImageView.rightAnchor, constant: 8).isActive = true
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.centerYAnchor.constraint(equalTo: titleView.centerYAnchor).isActive = true
+        label.rightAnchor.constraint(equalTo: titleView.rightAnchor).isActive = true
+        label.heightAnchor.constraint(equalToConstant: 30)
+        label.font = UIFont.boldSystemFont(ofSize: 16)
+        
     }
     
     fileprivate func checkIfUserIsLoggedIn() {
