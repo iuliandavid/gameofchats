@@ -14,7 +14,7 @@ class MessageController: UITableViewController {
     let profileImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage()
-        imageView.layer.cornerRadius = UserCell.imageSize / 2
+        imageView.layer.cornerRadius = 40 / 2
         imageView.clipsToBounds = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
@@ -62,8 +62,11 @@ class MessageController: UITableViewController {
         
         let titleView = UIView()
         titleView.frame = CGRect(x: 0, y: 0, width: 100, height: 40)
+        
+        
+        
         titleView.addSubview(profileImageView)
-        let label = UILabel(frame: CGRect(x: 0, y: 0, width: 58, height: 40))
+        let label = UILabel()
         label.text = user.name
         titleView.addSubview(label)
         
@@ -80,7 +83,7 @@ class MessageController: UITableViewController {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.centerYAnchor.constraint(equalTo: titleView.centerYAnchor).isActive = true
         label.rightAnchor.constraint(equalTo: titleView.rightAnchor).isActive = true
-        label.heightAnchor.constraint(equalToConstant: 30)
+        label.heightAnchor.constraint(equalTo: profileImageView.heightAnchor)
         label.font = UIFont.boldSystemFont(ofSize: 16)
         
     }
