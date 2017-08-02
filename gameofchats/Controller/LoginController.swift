@@ -76,11 +76,13 @@ class LoginController: UIViewController {
     }()
     
     
-    let profileImageView: UIImageView = {
+    lazy var profileImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "gameofthrones_splash")
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFill
+        imageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleSelectProfileImage)))
+        imageView.isUserInteractionEnabled = true
         return imageView
     }()
     
@@ -112,6 +114,7 @@ class LoginController: UIViewController {
     
     func setupLoginRegisterSegmentedControl() {
         //need x, y, width, height constraints
+        loginRegisterSegmentedControl.anchorCenterXToSuperview()
         loginRegisterSegmentedControl.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
         loginRegisterSegmentedControl.bottomAnchor.constraint(equalTo: inputsContainerView.topAnchor, constant: -12).isActive = true
         loginRegisterSegmentedControl.widthAnchor.constraint(equalTo: inputsContainerView.widthAnchor, multiplier: 1).isActive = true
@@ -192,112 +195,6 @@ class LoginController: UIViewController {
     
     override var preferredStatusBarStyle : UIStatusBarStyle {
         return .lightContent
-    }
-    
-    //MARK - Actions
-    @objc private func handleLoginRegister() {
-        if loginRegisterSegmentedControl.selectedSegmentIndex == 0 {
-            handleLogin()
-        } else {
-            handleRegister()
-        }
-        
-    }
-    
-    @objc func handleLoginRegisterChange() {
-        let title = loginRegisterSegmentedControl.titleForSegment(at: loginRegisterSegmentedControl.selectedSegmentIndex)
-        loginRegisterButton.setTitle(title, for: .normal)
-        
-        
-        // change height of inputContainerView
-        inputsContainerViewHeightAnchor?.constant = loginRegisterSegmentedControl.selectedSegmentIndex == 0 ? 100 : 150
-        
-        // change height of nameTextField
-        nameTextFieldHeightAnchor?.isActive = false
-        nameTextFieldHeightAnchor = nameTextField.heightAnchor.constraint(equalTo: inputsContainerView.heightAnchor, multiplier: loginRegisterSegmentedControl.selectedSegmentIndex == 0 ? 0 : 1/3)
-        emailTextFieldHeightAnchor?.isActive = false
-        emailTextFieldHeightAnchor = emailTextField.heightAnchor.constraint(equalTo: inputsContainerView.heightAnchor, multiplier: loginRegisterSegmentedControl.selectedSegmentIndex == 0 ? 1/2 : 1/3)
-        passwordTextFieldHeightAnchor?.isActive = false
-        passwordTextFieldHeightAnchor = passwordTextField.heightAnchor.constraint(equalTo: inputsContainerView.heightAnchor, multiplier: loginRegisterSegmentedControl.selectedSegmentIndex == 0 ? 1/2 : 1/3)
-        
-        emailTextFieldHeightAnchor?.isActive = true
-        passwordTextFieldHeightAnchor?.isActive = true
-        nameTextFieldHeightAnchor?.isActive = true
-        
-        //inputsContainerViewHeightAnchor?.isActive = true
-        UIView.animate(withDuration: 0.1) {
-            self.view.layoutIfNeeded()
-        }
-    }
-    
-    private func handleRegister() {
-        guard let email = emailTextField.text, let password = passwordTextField.text, let name = nameTextField.text else {
-            let alertController = UIAlertController(title: "Error", message: "Invalid Email or Password!", preferredStyle: .alert)
-            let action = UIAlertAction(title: "OK", style: .default, handler: nil)
-            alertController.addAction(action)
-            present(alertController, animated: true, completion: {
-                self.passwordTextField.text = ""
-            })
-            return
-        }
-        Auth.auth().createUser(withEmail: email, password: password) { (user, error) in
-            if error != nil {
-                let alertController = UIAlertController(title: "Error", message: error!.localizedDescription, preferredStyle: .alert)
-                let action = UIAlertAction(title: "OK", style: .default, handler: { action in
-                    self.passwordTextField.text = ""
-                })
-                alertController.addAction(action)
-                self.present(alertController, animated: true, completion: nil)
-            } else {
-                guard let uid = user?.uid else {
-                    return
-                }
-                // persist the authenticated user to "goc_users" db
-                let messagesDB = DBConstants.getDB(reference: DBConstants.DBReferenceUsers).child(uid)
-                let userValue = ["email" : email, "name" : name]
-                messagesDB.setValue(userValue, withCompletionBlock: { (err, ref) in
-                    if err != nil {
-                        let alertController = UIAlertController(title: "Error", message: err!.localizedDescription, preferredStyle: .alert)
-                        let action = UIAlertAction(title: "OK", style: .default, handler: nil)
-                        alertController.addAction(action)
-                        self.present(alertController, animated: true, completion: {
-                            self.passwordTextField.text = ""
-                        })
-                        return
-                    }
-                    
-                    print("User saved")
-                    self.dismiss(animated: true, completion: nil)
-                })
-                
-            }
-        }
-    }
-    
-    private func handleLogin() {
-        guard let email = emailTextField.text, let password = passwordTextField.text else {
-            let alertController = UIAlertController(title: "Error", message: "Invalid Email or Password!", preferredStyle: .alert)
-            let action = UIAlertAction(title: "OK", style: .default, handler: nil)
-            alertController.addAction(action)
-            present(alertController, animated: true, completion: {
-                self.passwordTextField.text = ""
-            })
-            return
-        }
-        
-        Auth.auth().signIn(withEmail: email, password: password) { (user, err) in
-            if err != nil {
-                let alertController = UIAlertController(title: "Error", message: err!.localizedDescription, preferredStyle: .alert)
-                let action = UIAlertAction(title: "OK", style: .default, handler: nil)
-                alertController.addAction(action)
-                self.present(alertController, animated: true, completion: {
-                    self.passwordTextField.text = ""
-                })
-                return
-            } else {
-                self.dismiss(animated: true, completion: nil)
-            }
-        }
     }
     
 }
