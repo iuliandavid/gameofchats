@@ -62,29 +62,34 @@ class MessageController: UITableViewController {
         
         let titleView = UIView()
         titleView.frame = CGRect(x: 0, y: 0, width: 100, height: 40)
+        titleView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTitleViewTap)))
         
-        
-        
-        titleView.addSubview(profileImageView)
+        let containerView = UIView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        titleView.addSubview(containerView)
         let label = UILabel()
         label.text = user.name
-        titleView.addSubview(label)
+        containerView.addSubview(label)
+        containerView.addSubview(profileImageView)
         
         navigationItem.titleView = titleView
         
         
         
-        profileImageView.leftAnchor.constraint(equalTo: titleView.leftAnchor).isActive = true
-        profileImageView.centerYAnchor.constraint(equalTo: titleView.centerYAnchor).isActive = true
+        profileImageView.leftAnchor.constraint(equalTo: containerView.leftAnchor).isActive = true
+        profileImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
         profileImageView.widthAnchor.constraint(equalToConstant: 40).isActive = true
         profileImageView.heightAnchor.constraint(equalToConstant: 40).isActive = true
         
         label.leftAnchor.constraint(equalTo: profileImageView.rightAnchor, constant: 8).isActive = true
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.centerYAnchor.constraint(equalTo: titleView.centerYAnchor).isActive = true
-        label.rightAnchor.constraint(equalTo: titleView.rightAnchor).isActive = true
+        label.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
+        label.rightAnchor.constraint(equalTo: containerView.rightAnchor).isActive = true
         label.heightAnchor.constraint(equalTo: profileImageView.heightAnchor)
         label.font = UIFont.boldSystemFont(ofSize: 16)
+        
+        containerView.centerXAnchor.constraint(equalTo: titleView.centerXAnchor).isActive = true
+        containerView.centerYAnchor.constraint(equalTo: titleView.centerYAnchor).isActive = true
         
     }
     
@@ -119,6 +124,10 @@ class MessageController: UITableViewController {
         present(UINavigationController(rootViewController: newMessageController), animated: true, completion: nil)
     }
     
+    @objc func handleTitleViewTap() {
+        let logChatController = ChatLogController(collectionViewLayout: UICollectionViewFlowLayout())
+        navigationController?.pushViewController(logChatController, animated: true)
+    }
     
     
 }
