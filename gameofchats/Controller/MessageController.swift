@@ -22,6 +22,8 @@ class MessageController: UITableViewController {
     
     var user: AppUser?
     var userUID: String?
+    var messages: [Message] = []
+    var messagesDictionary: [String: Message] = [:]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,40 +31,84 @@ class MessageController: UITableViewController {
         navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout", style: .plain, target: self, action: #selector(handleLogout))
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "new_message_icon"), style: .plain, target: self, action: #selector(handleNewMessage))
-        navigationItem.titleView?.addSubview(profileImageView)
+        
+
+        tableView.register(UserCell.self, forCellReuseIdentifier: Tables.messagesCellIdentifier)
+        tableView.delegate = self
+        tableView.dataSource = self
         checkIfUserIsLoggedIn()
     }
     
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(true)
-        checkIfUserIsLoggedIn()
+    func observeUserMessages() {
         
+        guard let id = userUID else {
+            return
+        }
+        let ref = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(id)
+       
+        ref.observe(.childAdded, with: { (userMessageSnapshot) in
+            let mesageID = userMessageSnapshot.key
+            let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceMessages).child(mesageID)
+            messagesRef.observeSingleEvent(of: .value, with: { (snapshot) in
+                if let dictionary = snapshot.value as? [String: Any] {
+                    let message = Message()
+                    message.fromId = dictionary["fromId"] as? String
+                    message.text = dictionary["text"] as? String
+                    message.toId = dictionary["toId"] as? String
+                    message.timestamp = dictionary["timestamp"] as? Int
+                    self.outputMessage(message)
+                }
+            }, withCancel: nil)
+        }, withCancel: nil)
     }
+//    func observeMessages(){
+//        let ref = DBConstants.getDB(reference: DBConstants.DBReferenceMessages)
+//        ref.observe(.childAdded, with: { (snapshot) in
+//            if let dictionary = snapshot.value as? [String: Any] {
+//                let message = Message()
+//                message.fromId = dictionary["fromId"] as? String
+//                message.text = dictionary["text"] as? String
+//                message.toId = dictionary["toId"] as? String
+//                message.timestamp = dictionary["timestamp"] as? Int
+//                self.outputMessage(message)
+//            }
+//        }, withCancel: nil)
+//        
+//    }
+//    override func viewDidAppear(_ animated: Bool) {
+//        super.viewDidAppear(true)
+//        checkIfUserIsLoggedIn()
+//
+//    }
     
     fileprivate func getCurrentUser(_ uid: String) {
         
         DBConstants.getDB(reference: DBConstants.DBReferenceUsers).child(uid).observeSingleEvent(of: .value, with: { [weak self]
             (snapshot) in
             if let snapshotValue = snapshot.value as? Dictionary<String, String> {
-                guard let strongSelf = self else { return }
-                strongSelf.user = AppUser()
-                strongSelf.user?.name = snapshotValue["name"]
-                strongSelf.user?.email = snapshotValue["email"]
-                strongSelf.user?.imageURL = snapshotValue["profileImageUrl"]
-                strongSelf.setUpNavigationBar()
+                self?.user = AppUser()
+                self?.user?.name = snapshotValue["name"]
+                self?.user?.email = snapshotValue["email"]
+                self?.user?.imageURL = snapshotValue["profileImageUrl"]
+                self?.setUpNavigationBar()
             }
         })
     }
     
     fileprivate func setUpNavigationBar() {
+        messages.removeAll()
+        messagesDictionary.removeAll()
+        tableView.reloadData()
+        
+        observeUserMessages()
         guard let user = user, let profileImageURL = user.imageURL else {
             return
         }
+        
         profileImageView.loadImageUsingCache(withURLString: profileImageURL)
         
         let titleView = UIView()
         titleView.frame = CGRect(x: 0, y: 0, width: 100, height: 40)
-        titleView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTitleViewTap)))
         
         let containerView = UIView()
         containerView.translatesAutoresizingMaskIntoConstraints = false
@@ -71,10 +117,7 @@ class MessageController: UITableViewController {
         label.text = user.name
         containerView.addSubview(label)
         containerView.addSubview(profileImageView)
-        
-        navigationItem.titleView = titleView
-        
-        
+        //        containerView.setTitle(user.name, for: .normal)
         
         profileImageView.leftAnchor.constraint(equalTo: containerView.leftAnchor).isActive = true
         profileImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
@@ -91,20 +134,29 @@ class MessageController: UITableViewController {
         containerView.centerXAnchor.constraint(equalTo: titleView.centerXAnchor).isActive = true
         containerView.centerYAnchor.constraint(equalTo: titleView.centerYAnchor).isActive = true
         
+        self.navigationItem.titleView = titleView
+        //        //???
+        //        titleView.isUserInteractionEnabled = true
+        //        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(showChatController))
+        //        tapGesture.numberOfTapsRequired = 1;
+        //        self.navigationItem.titleView?.addGestureRecognizer(tapGesture)
+        //        navigationItem.titleView?.isUserInteractionEnabled = true
+        
+        
     }
     
-    fileprivate func checkIfUserIsLoggedIn() {
+    func checkIfUserIsLoggedIn() {
         //user is not logged in
         guard let uid = Auth.auth().currentUser?.uid else {
             perform(#selector(handleLogout), with: nil, afterDelay: 0)
             return
         }
-        
+        self.userUID = uid
         guard let user = user else {
             getCurrentUser(uid)
             return
         }
-        self.navigationItem.title = user.name
+        
         
     }
     @objc func handleLogout() {
@@ -116,18 +168,67 @@ class MessageController: UITableViewController {
         }
         
         let loginController = LoginController()
+        loginController.messagesController = self
         present(loginController, animated: true, completion: nil)
     }
     
     @objc func handleNewMessage() {
         let newMessageController = NewMessageController()
+        newMessageController.messageController = self
         present(UINavigationController(rootViewController: newMessageController), animated: true, completion: nil)
     }
     
-    @objc func handleTitleViewTap() {
-        let logChatController = ChatLogController(collectionViewLayout: UICollectionViewFlowLayout())
-        navigationController?.pushViewController(logChatController, animated: true)
+    func showChatController(for user: AppUser) {
+        let chatLogController = ChatLogController(collectionViewLayout: UICollectionViewFlowLayout())
+        chatLogController.user = user
+        navigationController?.pushViewController(chatLogController, animated: true)
+    }
+    
+    fileprivate func outputMessage(_ message: Message) {
+        let partnerId : String?
+        if message.fromId == userUID {
+            partnerId = message.toId
+        } else {
+            partnerId = message.fromId
+        }
+        guard let id = partnerId else {
+            return
+        }
+        messagesDictionary[id] = message
+        configureTableView()
+        self.messages = Array(messagesDictionary.values.sorted(by: { (m1, m2) -> Bool in
+            return m1.timestamp! > m2.timestamp!
+        }))
+        tableView.reloadData()
+    }
+    
+    func configureTableView() {
+        tableView.rowHeight = UITableViewAutomaticDimension
+        tableView.estimatedRowHeight = 120.0
     }
     
     
 }
+
+//MARK - Table DataSource
+extension MessageController {
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return messages.count
+    }
+    
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 72
+    }
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: Tables.messagesCellIdentifier, for: indexPath)
+            as? UserCell  else {
+                return UITableViewCell()
+        }
+        
+        let message = messages[indexPath.row]
+        cell.message = message
+        return cell
+    }
+}
+
+

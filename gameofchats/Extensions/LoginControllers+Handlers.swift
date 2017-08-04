@@ -32,6 +32,7 @@ extension LoginController {
         // change height of nameTextField
         nameTextFieldHeightAnchor?.isActive = false
         nameTextFieldHeightAnchor = nameTextField.heightAnchor.constraint(equalTo: inputsContainerView.heightAnchor, multiplier: loginRegisterSegmentedControl.selectedSegmentIndex == 0 ? 0 : 1/3)
+        nameTextField.isHidden = loginRegisterSegmentedControl.selectedSegmentIndex == 0 ? true : false
         emailTextFieldHeightAnchor?.isActive = false
         emailTextFieldHeightAnchor = emailTextField.heightAnchor.constraint(equalTo: inputsContainerView.heightAnchor, multiplier: loginRegisterSegmentedControl.selectedSegmentIndex == 0 ? 1/2 : 1/3)
         passwordTextFieldHeightAnchor?.isActive = false
@@ -63,6 +64,7 @@ extension LoginController {
             }
             
             print("User saved")
+            self.messagesController?.checkIfUserIsLoggedIn()
             self.dismiss(animated: true, completion: nil)
         })
     }
@@ -133,6 +135,7 @@ extension LoginController {
                 })
                 return
             } else {
+                self.messagesController?.checkIfUserIsLoggedIn()
                 self.dismiss(animated: true, completion: nil)
             }
         }

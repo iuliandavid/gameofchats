@@ -13,4 +13,5 @@ class AppUser: NSObject {
     var name: String?
     var email: String?
     var imageURL : String?
+    var uid : String?
 }

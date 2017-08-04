@@ -13,8 +13,20 @@ import Firebase
 
 struct DBConstants {
     static let DBReferenceUsers = "goc_users"
+    static let DBReferenceMessages = "goc_messages"
+    static let DBReferenceUserMessages = "goc_user_messages"
     
     static func getDB(reference: String) -> DatabaseReference {
         return Database.database().reference().child(reference)
     }
 }
+
+struct Tables {
+    static let messagesCellIdentifier = "messageCell"
+}
+
+let dateFormatter : DateFormatter = {
+    let formater = DateFormatter()
+    formater.dateFormat = "HH:mm:ss"
+    return formater
+}()
