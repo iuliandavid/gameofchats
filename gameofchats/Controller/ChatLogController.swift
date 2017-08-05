@@ -34,13 +34,15 @@ class ChatLogController: UICollectionViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        setupInputComponents()
+        
         collectionView?.backgroundColor = .white
         collectionView?.register(ChatMessageCell.self, forCellWithReuseIdentifier: ChatCollection.chatCellIdentifier)
-//        collectionView?.delegate = self
-//        collectionView?.dataSource = self
         collectionView?.alwaysBounceVertical = true
+        //padding from top
+        collectionView?.contentInset = UIEdgeInsets(top: 8, left: 0, bottom: 58, right: 0)
+        collectionView?.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 50, right: 0)
         
+        setupInputComponents()
     }
     
     
@@ -152,25 +154,31 @@ class ChatLogController: UICollectionViewController {
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ChatCollection.chatCellIdentifier, for: indexPath) as? ChatMessageCell else {
             fatalError()
         }
-        let message = messages[indexPath.row]
+        let message = messages[indexPath.item]
         cell.message = message
+        
+        let estimatedCellSize = estimateFrameForText(text: message.text!)
+        cell.bubbleWidthAnchor?.constant = estimatedCellSize.width + 32
+        cell.bubbleView.layer.cornerRadius = 16
+        cell.bubbleView.layer.masksToBounds = true
         return cell
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count
     }
+    
+    
     func outputMessage(_ message: Message) {
-        //        configureTableView()
         self.messages.append(message)
-        self.messages.sort { (m1, m2) -> Bool in
-            return m1.timestamp! > m2.timestamp!
-        }
+
         DispatchQueue.main.async {
             self.collectionView?.reloadData()
         }
         
     }
+    
+    
 }
 
 extension ChatLogController : UITextFieldDelegate {
@@ -184,6 +192,29 @@ extension ChatLogController : UITextFieldDelegate {
 
 extension ChatLogController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: view.frame.width, height: 80)
+        var height: CGFloat = 80
+        
+        // get estimated height
+        let message = messages[indexPath.item]
+        if let textMessage = message.text {
+            height = estimateFrameForText(text: textMessage).height + 30
+        }
+        return CGSize(width: view.frame.width, height: height)
+    }
+    
+    //reset anchors based on orientation
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        collectionView?.collectionViewLayout.invalidateLayout()
+    }
+    
+    func estimateFrameForText(text: String) -> CGRect {
+        //we make the height arbitrarily large so we don't undershoot height in calculation
+        let height: CGFloat = 1000
+        
+        let size = CGSize(width: 200, height: height)
+        let options = NSStringDrawingOptions.usesFontLeading.union(.usesLineFragmentOrigin)
+        let attributes = [NSFontAttributeName: UIFont.systemFont(ofSize: 16)]
+        
+        return NSString(string: text).boundingRect(with: size, options: options, attributes: attributes, context: nil)
     }
 }
