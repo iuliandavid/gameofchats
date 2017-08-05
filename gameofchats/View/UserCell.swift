@@ -25,14 +25,7 @@ class UserCell: UITableViewCell {
     
     fileprivate func setupProfileImage() {
         
-        let currentPartnerID: String?
-        if message?.fromId == Auth.auth().currentUser?.uid {
-            currentPartnerID = message?.toId
-        } else {
-            currentPartnerID = message?.fromId
-        }
-        
-        if let id = currentPartnerID {
+        if let id = message?.chatPartnerId() {
             DBConstants.getDB(reference: DBConstants.DBReferenceUsers).child(id).observeSingleEvent(of: .value, with: {
                 (snapshot) in
                 if let snapshotValue = snapshot.value as? Dictionary<String, String> {

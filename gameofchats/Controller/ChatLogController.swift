@@ -11,9 +11,13 @@ import Firebase
 
 class ChatLogController: UICollectionViewController {
     
+    var messages = [Message]()
+    
     var user: AppUser? {
         didSet {
             navigationItem.title = user?.name
+            
+            observeMessages()
         }
     }
     
@@ -32,12 +36,17 @@ class ChatLogController: UICollectionViewController {
         
         setupInputComponents()
         collectionView?.backgroundColor = .white
+        collectionView?.register(ChatMessageCell.self, forCellWithReuseIdentifier: ChatCollection.chatCellIdentifier)
+//        collectionView?.delegate = self
+//        collectionView?.dataSource = self
+        collectionView?.alwaysBounceVertical = true
+        
     }
     
     
     fileprivate func setupInputComponents() {
         let containerView = UIView()
-        containerView.backgroundColor = .clear
+        containerView.backgroundColor = .white
         
         containerView.translatesAutoresizingMaskIntoConstraints = false
         
@@ -113,6 +122,55 @@ class ChatLogController: UICollectionViewController {
         
         inputTextField.text = ""
     }
+    
+    func observeMessages(){
+        guard let uid = user?.uid else { return }
+        guard let authId = Auth.auth().currentUser?.uid else { return }
+        let ref = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(authId)
+        
+        ref.observe(.childAdded, with: { (userMessageSnapshot) in
+            let mesageID = userMessageSnapshot.key
+            let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceMessages).child(mesageID)
+            messagesRef.observeSingleEvent(of: .value, with: { (snapshot) in
+                if let dictionary = snapshot.value as? [String: Any] {
+                    let message = Message()
+                    message.fromId = dictionary["fromId"] as? String
+                    message.text = dictionary["text"] as? String
+                    message.toId = dictionary["toId"] as? String
+                    message.timestamp = dictionary["timestamp"] as? Int
+                    if message.chatPartnerId() == uid {
+                        self.outputMessage(message)
+                    }
+                }
+            }, withCancel: nil)
+        }, withCancel: nil)
+        
+    }
+    
+    // MARK - Collection Data Source
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ChatCollection.chatCellIdentifier, for: indexPath) as? ChatMessageCell else {
+            fatalError()
+        }
+        let message = messages[indexPath.row]
+        cell.message = message
+        return cell
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return messages.count
+    }
+    func outputMessage(_ message: Message) {
+        //        configureTableView()
+        self.messages.append(message)
+        self.messages.sort { (m1, m2) -> Bool in
+            return m1.timestamp! > m2.timestamp!
+        }
+        DispatchQueue.main.async {
+            self.collectionView?.reloadData()
+        }
+        
+    }
 }
 
 extension ChatLogController : UITextFieldDelegate {
@@ -120,5 +178,12 @@ extension ChatLogController : UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         handleSend()
         return true
+    }
+}
+
+
+extension ChatLogController: UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: view.frame.width, height: 80)
     }
 }

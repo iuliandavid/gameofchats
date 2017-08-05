@@ -61,38 +61,14 @@ class MessageController: UITableViewController {
             }, withCancel: nil)
         }, withCancel: nil)
     }
-//    func observeMessages(){
-//        let ref = DBConstants.getDB(reference: DBConstants.DBReferenceMessages)
-//        ref.observe(.childAdded, with: { (snapshot) in
-//            if let dictionary = snapshot.value as? [String: Any] {
-//                let message = Message()
-//                message.fromId = dictionary["fromId"] as? String
-//                message.text = dictionary["text"] as? String
-//                message.toId = dictionary["toId"] as? String
-//                message.timestamp = dictionary["timestamp"] as? Int
-//                self.outputMessage(message)
-//            }
-//        }, withCancel: nil)
-//        
-//    }
-//    override func viewDidAppear(_ animated: Bool) {
-//        super.viewDidAppear(true)
-//        checkIfUserIsLoggedIn()
-//
-//    }
+
     
     fileprivate func getCurrentUser(_ uid: String) {
+        AppUser.getAppUser(for: uid) { (appUser) in
+            self.user = appUser
+            self.setUpNavigationBar()
+        }
         
-        DBConstants.getDB(reference: DBConstants.DBReferenceUsers).child(uid).observeSingleEvent(of: .value, with: { [weak self]
-            (snapshot) in
-            if let snapshotValue = snapshot.value as? Dictionary<String, String> {
-                self?.user = AppUser()
-                self?.user?.name = snapshotValue["name"]
-                self?.user?.email = snapshotValue["email"]
-                self?.user?.imageURL = snapshotValue["profileImageUrl"]
-                self?.setUpNavigationBar()
-            }
-        })
     }
     
     fileprivate func setUpNavigationBar() {
@@ -185,16 +161,8 @@ class MessageController: UITableViewController {
     }
     
     fileprivate func outputMessage(_ message: Message) {
-        let partnerId : String?
-        if message.fromId == userUID {
-            partnerId = message.toId
-        } else {
-            partnerId = message.fromId
-        }
-        guard let id = partnerId else {
-            return
-        }
-        messagesDictionary[id] = message
+        let id = message.chatPartnerId()
+        messagesDictionary[id!] = message
         configureTableView()
         self.messages = Array(messagesDictionary.values.sorted(by: { (m1, m2) -> Bool in
             return m1.timestamp! > m2.timestamp!
@@ -229,6 +197,22 @@ extension MessageController {
         cell.message = message
         return cell
     }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let message = messages[indexPath.row]
+        
+        guard let chatPartnerId = message.chatPartnerId() else {
+            return
+        }
+        
+        AppUser.getAppUser(for: chatPartnerId) { (appUser) in
+            self.showChatController(for: appUser)
+        }
+        
+        
+    }
 }
+
+
 
 

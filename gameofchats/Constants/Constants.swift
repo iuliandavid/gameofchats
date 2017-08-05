@@ -25,6 +25,10 @@ struct Tables {
     static let messagesCellIdentifier = "messageCell"
 }
 
+struct ChatCollection {
+    static let chatCellIdentifier = "chatCell"
+}
+
 let dateFormatter : DateFormatter = {
     let formater = DateFormatter()
     formater.dateFormat = "HH:mm:ss"
