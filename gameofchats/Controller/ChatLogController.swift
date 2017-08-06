@@ -39,8 +39,7 @@ class ChatLogController: UICollectionViewController {
         collectionView?.register(ChatMessageCell.self, forCellWithReuseIdentifier: ChatCollection.chatCellIdentifier)
         collectionView?.alwaysBounceVertical = true
         //padding from top
-        collectionView?.contentInset = UIEdgeInsets(top: 8, left: 0, bottom: 58, right: 0)
-        collectionView?.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 50, right: 0)
+        collectionView?.contentInset = UIEdgeInsets(top: 8, left: 0, bottom: 8, right: 0)
         
         //the collection scroll will follow the keyboard up and down selection
         collectionView?.keyboardDismissMode = .interactive
@@ -128,7 +127,8 @@ class ChatLogController: UICollectionViewController {
             pertnermessagesRef.updateChildValues([messageID : 1])
         }
         
-        inputTextField.text = ""
+        inputTextField.text = nil
+        
     }
     
     func observeMessages(){
@@ -199,6 +199,8 @@ class ChatLogController: UICollectionViewController {
         
         DispatchQueue.main.async {
             self.collectionView?.reloadData()
+            let indexPath = IndexPath(item: self.messages.count - 1, section: 0)
+            self.collectionView?.scrollToItem(at: indexPath, at: .bottom, animated: true)
         }
         
     }
@@ -209,7 +211,6 @@ extension ChatLogController : UITextFieldDelegate {
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         handleSend()
-        textField.endEditing(true)
         return true
     }
     
@@ -225,7 +226,8 @@ extension ChatLogController: UICollectionViewDelegateFlowLayout {
         if let textMessage = message.text {
             height = estimateFrameForText(text: textMessage).height + 30
         }
-        return CGSize(width: view.frame.width, height: height)
+        let width = UIScreen.main.bounds.width
+        return CGSize(width: width, height: height)
     }
     
     //reset anchors based on orientation
@@ -256,4 +258,5 @@ extension ChatLogController {
     override var inputAccessoryView: UIView? {
         return inputContainerView
     }
+    
 }
