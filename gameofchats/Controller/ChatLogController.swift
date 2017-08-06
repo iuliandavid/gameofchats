@@ -45,76 +45,41 @@ class ChatLogController: UICollectionViewController {
         //the collection scroll will follow the keyboard up and down selection
         collectionView?.keyboardDismissMode = .interactive
         
-        setupInputComponents()
-        setupKeyboardObservers()
     }
     
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        NotificationCenter.default.removeObserver(self)
     }
-    
-    func setupKeyboardObservers() {
-        NotificationCenter.default.addObserver(self, selector: #selector(handleKeyboardWillShow(notification:)), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
-
-        NotificationCenter.default.addObserver(self, selector: #selector(handleKeyboardWillHide(notification:)), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
-    }
-    
-    func handleKeyboardWillShow(notification: Notification) {
-        let keyboardSize = (notification.userInfo![UIKeyboardFrameBeginUserInfoKey]! as AnyObject).cgRectValue.size
-        let keyboardDuration = (notification.userInfo![UIKeyboardAnimationDurationUserInfoKey]! as AnyObject).doubleValue
-        containerViewBottomAnchor?.constant = -keyboardSize.height
-        containerViewBottomAnchor?.isActive = true
-        UIView.animate(withDuration: keyboardDuration!) {
-            self.view.layoutIfNeeded()
-        }
-    }
-    
-    func handleKeyboardWillHide(notification: Notification) {
-        let keyboardDuration = (notification.userInfo![UIKeyboardAnimationDurationUserInfoKey]! as AnyObject).doubleValue
-        containerViewBottomAnchor?.constant = 0
-        containerViewBottomAnchor?.isActive = true
-        UIView.animate(withDuration: keyboardDuration!) {
-            self.view.layoutIfNeeded()
-        }
-    }
-    
-    var containerHeightAnchor: NSLayoutConstraint?
-    var containerViewBottomAnchor: NSLayoutConstraint?
-    fileprivate func setupInputComponents() {
+   
+    lazy var inputContainerView: UIView = {
         let containerView = UIView()
         containerView.backgroundColor = .white
         
         containerView.translatesAutoresizingMaskIntoConstraints = false
         
-        view.addSubview(containerView)
         
         // x, y, w, h
-        containerView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
-        containerViewBottomAnchor = containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        containerViewBottomAnchor?.isActive = true
-        containerView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
-        containerHeightAnchor = containerView.heightAnchor.constraint(equalToConstant: 50)
-        containerHeightAnchor?.isActive = true
+        containerView.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: 50)
         
-        // add textfield
+        
         
         // add button
         let sendButton = UIButton(type: .system)
         sendButton.setTitle("Send", for: .normal)
         sendButton.translatesAutoresizingMaskIntoConstraints = false
         sendButton.addTarget(self, action: #selector(handleSend), for: .touchUpInside)
-        containerView.addSubview(inputTextField)
+        containerView.addSubview(self.inputTextField)
         containerView.addSubview(sendButton)
         
+        // add textfield
         // x, y, w, h
-        inputTextField.leftAnchor.constraint(equalTo: containerView.leftAnchor, constant: 8).isActive = true
-        inputTextField.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
-        inputTextField.widthAnchor.constraint(equalTo: containerView.widthAnchor, constant: -80).isActive = true
-        inputTextField.heightAnchor.constraint(equalTo: containerView.heightAnchor).isActive = true
+        self.inputTextField.leftAnchor.constraint(equalTo: containerView.leftAnchor, constant: 8).isActive = true
+        self.inputTextField.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
+        self.inputTextField.widthAnchor.constraint(equalTo: containerView.widthAnchor, constant: -80).isActive = true
+        self.inputTextField.heightAnchor.constraint(equalTo: containerView.heightAnchor).isActive = true
         
         // x, y, w, h
-        sendButton.leftAnchor.constraint(equalTo: inputTextField.rightAnchor, constant: 2 ).isActive = true
+        sendButton.leftAnchor.constraint(equalTo: self.inputTextField.rightAnchor, constant: 2 ).isActive = true
         sendButton.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
         sendButton.rightAnchor.constraint(equalTo: containerView.rightAnchor, constant: -2).isActive = true
         sendButton.heightAnchor.constraint(equalTo: containerView.heightAnchor).isActive = true
@@ -130,10 +95,14 @@ class ChatLogController: UICollectionViewController {
         separatorView.topAnchor.constraint(equalTo: containerView.topAnchor).isActive = true
         separatorView.widthAnchor.constraint(equalTo: containerView.widthAnchor).isActive = true
         separatorView.heightAnchor.constraint(equalToConstant: 1).isActive = true
-        
-        
-        
-    }
+        return containerView
+    }()
+    
+    
+    
+    
+    var containerHeightAnchor: NSLayoutConstraint?
+    var containerViewBottomAnchor: NSLayoutConstraint?
     
     @objc func handleSend() {
         guard let message = inputTextField.text else {
@@ -227,13 +196,12 @@ class ChatLogController: UICollectionViewController {
     
     func outputMessage(_ message: Message) {
         self.messages.append(message)
-
+        
         DispatchQueue.main.async {
             self.collectionView?.reloadData()
         }
         
     }
-    
     
 }
 
@@ -241,10 +209,12 @@ extension ChatLogController : UITextFieldDelegate {
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         handleSend()
+        textField.endEditing(true)
         return true
     }
+    
+    
 }
-
 
 extension ChatLogController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -272,5 +242,18 @@ extension ChatLogController: UICollectionViewDelegateFlowLayout {
         let attributes = [NSFontAttributeName: UIFont.systemFont(ofSize: 16)]
         
         return NSString(string: text).boundingRect(with: size, options: options, attributes: attributes, context: nil)
+    }
+}
+
+//MARK: KeyboardWillShow/Hide functionality
+extension ChatLogController {
+    //Implementing view aligning with keyboard by using inputAccessoryView
+    //KeyboardWillShow/Hide equivalent
+    override var canBecomeFirstResponder : Bool {
+        return true
+    }
+    
+    override var inputAccessoryView: UIView? {
+        return inputContainerView
     }
 }
