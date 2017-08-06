@@ -42,6 +42,9 @@ class ChatLogController: UICollectionViewController {
         collectionView?.contentInset = UIEdgeInsets(top: 8, left: 0, bottom: 58, right: 0)
         collectionView?.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 50, right: 0)
         
+        //the collection scroll will follow the keyboard up and down selection
+        collectionView?.keyboardDismissMode = .interactive
+        
         setupInputComponents()
         setupKeyboardObservers()
     }
@@ -53,6 +56,7 @@ class ChatLogController: UICollectionViewController {
     
     func setupKeyboardObservers() {
         NotificationCenter.default.addObserver(self, selector: #selector(handleKeyboardWillShow(notification:)), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
+
         NotificationCenter.default.addObserver(self, selector: #selector(handleKeyboardWillHide(notification:)), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
     }
     
