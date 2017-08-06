@@ -15,9 +15,8 @@ class UserCell: UITableViewCell {
     
     var message: Message? {
         didSet {
-            self.detailTextLabel?.text = message?.text
-            
             setupProfileImage()
+            self.detailTextLabel?.text = message?.text
             self.timeLabel.text = dateFormatter.string(from: Date(timeIntervalSince1970: Double(message!.timestamp!)))
             self.timeLabel.isHidden = false
         }

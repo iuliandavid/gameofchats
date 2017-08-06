@@ -97,7 +97,7 @@ extension LoginController {
                 if let imageData = UIImageJPEGRepresentation(self.profileImageView.image!, 0.2) {
                     storage.putData(imageData, metadata: nil, completion: { (metadata, err) in
                         if err != nil {
-                            print(err?.localizedDescription ?? "unknowen")
+                            print(err?.localizedDescription ?? "unknown")
                             return
                         }
                         if let profileImageUrl = (metadata?.downloadURL()?.absoluteString) {

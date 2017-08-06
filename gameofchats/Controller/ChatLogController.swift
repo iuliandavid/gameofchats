@@ -43,9 +43,40 @@ class ChatLogController: UICollectionViewController {
         collectionView?.scrollIndicatorInsets = UIEdgeInsets(top: 0, left: 0, bottom: 50, right: 0)
         
         setupInputComponents()
+        setupKeyboardObservers()
     }
     
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        NotificationCenter.default.removeObserver(self)
+    }
     
+    func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(handleKeyboardWillShow(notification:)), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleKeyboardWillHide(notification:)), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+    }
+    
+    func handleKeyboardWillShow(notification: Notification) {
+        let keyboardSize = (notification.userInfo![UIKeyboardFrameBeginUserInfoKey]! as AnyObject).cgRectValue.size
+        let keyboardDuration = (notification.userInfo![UIKeyboardAnimationDurationUserInfoKey]! as AnyObject).doubleValue
+        containerViewBottomAnchor?.constant = -keyboardSize.height
+        containerViewBottomAnchor?.isActive = true
+        UIView.animate(withDuration: keyboardDuration!) {
+            self.view.layoutIfNeeded()
+        }
+    }
+    
+    func handleKeyboardWillHide(notification: Notification) {
+        let keyboardDuration = (notification.userInfo![UIKeyboardAnimationDurationUserInfoKey]! as AnyObject).doubleValue
+        containerViewBottomAnchor?.constant = 0
+        containerViewBottomAnchor?.isActive = true
+        UIView.animate(withDuration: keyboardDuration!) {
+            self.view.layoutIfNeeded()
+        }
+    }
+    
+    var containerHeightAnchor: NSLayoutConstraint?
+    var containerViewBottomAnchor: NSLayoutConstraint?
     fileprivate func setupInputComponents() {
         let containerView = UIView()
         containerView.backgroundColor = .white
@@ -56,9 +87,11 @@ class ChatLogController: UICollectionViewController {
         
         // x, y, w, h
         containerView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
-        containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
+        containerViewBottomAnchor = containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        containerViewBottomAnchor?.isActive = true
         containerView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
-        containerView.heightAnchor.constraint(equalToConstant: 50).isActive = true
+        containerHeightAnchor = containerView.heightAnchor.constraint(equalToConstant: 50)
+        containerHeightAnchor?.isActive = true
         
         // add textfield
         
@@ -150,19 +183,38 @@ class ChatLogController: UICollectionViewController {
     }
     
     // MARK - Collection Data Source
+    
+    
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ChatCollection.chatCellIdentifier, for: indexPath) as? ChatMessageCell else {
             fatalError()
         }
         let message = messages[indexPath.item]
+        setupCell(message, cell)
+        
         cell.message = message
         
         let estimatedCellSize = estimateFrameForText(text: message.text!)
-        cell.bubbleWidthAnchor?.constant = estimatedCellSize.width + 32
+        cell.bubbleWidthAnchor?.constant = estimatedCellSize.width + 30
         cell.bubbleView.layer.cornerRadius = 16
         cell.bubbleView.layer.masksToBounds = true
         return cell
     }
+    
+    fileprivate func setupCell(_ message: Message, _ cell: ChatMessageCell) {
+        if message.fromId == user?.uid {
+            cell.bubbleView.backgroundColor = ChatMessageCell.grayColor
+            cell.orientation = .left
+            cell.chatText.textColor = .black
+            cell.profileImageURL = user?.imageURL
+        } else {
+            cell.bubbleView.backgroundColor = ChatMessageCell.blueColor
+            cell.orientation = .right
+            cell.chatText.textColor = .white
+            
+        }
+    }
+    
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return messages.count

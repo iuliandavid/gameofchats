@@ -32,11 +32,11 @@ class MessageController: UITableViewController {
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "new_message_icon"), style: .plain, target: self, action: #selector(handleNewMessage))
         
-
-        tableView.register(UserCell.self, forCellReuseIdentifier: Tables.messagesCellIdentifier)
-        tableView.delegate = self
-        tableView.dataSource = self
         checkIfUserIsLoggedIn()
+        
+        tableView.register(UserCell.self, forCellReuseIdentifier: Tables.messagesCellIdentifier)
+        
+        
     }
     
     func observeUserMessages() {
@@ -57,11 +57,23 @@ class MessageController: UITableViewController {
                     message.toId = dictionary["toId"] as? String
                     message.timestamp = dictionary["timestamp"] as? Int
                     self.outputMessage(message)
+                    
+                    self.timer?.invalidate()
+                    
+                    self.timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.handleReloadTable), userInfo: nil, repeats: false)
                 }
             }, withCancel: nil)
         }, withCancel: nil)
     }
 
+    var timer: Timer?
+    
+    func handleReloadTable() {
+        DispatchQueue.main.async(execute: {
+            print("Reloaded the table")
+            self.tableView.reloadData()
+        })
+    }
     
     fileprivate func getCurrentUser(_ uid: String) {
         AppUser.getAppUser(for: uid) { (appUser) in
@@ -128,7 +140,7 @@ class MessageController: UITableViewController {
             return
         }
         self.userUID = uid
-        guard let user = user else {
+        guard let _ = user else {
             getCurrentUser(uid)
             return
         }
@@ -164,10 +176,11 @@ class MessageController: UITableViewController {
         let id = message.chatPartnerId()
         messagesDictionary[id!] = message
         configureTableView()
-        self.messages = Array(messagesDictionary.values.sorted(by: { (m1, m2) -> Bool in
-            return m1.timestamp! > m2.timestamp!
-        }))
-        tableView.reloadData()
+        self.messages = Array(self.messagesDictionary.values)
+        self.messages.sort { (message1, message2) -> Bool in
+            return message1.timestamp! > message2.timestamp!
+        }
+//        tableView.reloadData()
     }
     
     func configureTableView() {
