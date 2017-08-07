@@ -60,6 +60,12 @@ class ChatLogController: UICollectionViewController {
         // x, y, w, h
         containerView.frame = CGRect(x: 0, y: 0, width: self.view.frame.width, height: 50)
         
+        //upload image
+        let uploadImageView = UIImageView()
+        uploadImageView.translatesAutoresizingMaskIntoConstraints = false
+        uploadImageView.image = #imageLiteral(resourceName: "upload_image_icon")
+        uploadImageView.isUserInteractionEnabled = true
+        uploadImageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleUploadTap)))
         
         
         // add button
@@ -67,14 +73,21 @@ class ChatLogController: UICollectionViewController {
         sendButton.setTitle("Send", for: .normal)
         sendButton.translatesAutoresizingMaskIntoConstraints = false
         sendButton.addTarget(self, action: #selector(handleSend), for: .touchUpInside)
+        containerView.addSubview(uploadImageView)
         containerView.addSubview(self.inputTextField)
         containerView.addSubview(sendButton)
         
+        // x, y, w, h
+        uploadImageView.leftAnchor.constraint(equalTo: containerView.leftAnchor).isActive = true
+        uploadImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
+        uploadImageView.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        uploadImageView.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        
         // add textfield
         // x, y, w, h
-        self.inputTextField.leftAnchor.constraint(equalTo: containerView.leftAnchor, constant: 8).isActive = true
+        self.inputTextField.leftAnchor.constraint(equalTo: uploadImageView.rightAnchor, constant: 2).isActive = true
         self.inputTextField.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
-        self.inputTextField.widthAnchor.constraint(equalTo: containerView.widthAnchor, constant: -80).isActive = true
+        self.inputTextField.widthAnchor.constraint(equalTo: containerView.widthAnchor, constant: -120).isActive = true
         self.inputTextField.heightAnchor.constraint(equalTo: containerView.heightAnchor).isActive = true
         
         // x, y, w, h
@@ -138,18 +151,9 @@ class ChatLogController: UICollectionViewController {
         
         ref.observe(.childAdded, with: { (userMessageSnapshot) in
             let mesageID = userMessageSnapshot.key
-            let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceMessages).child(mesageID)
-            messagesRef.observeSingleEvent(of: .value, with: { (snapshot) in
-                if let dictionary = snapshot.value as? [String: Any] {
-                    let message = Message()
-                    message.fromId = dictionary["fromId"] as? String
-                    message.text = dictionary["text"] as? String
-                    message.toId = dictionary["toId"] as? String
-                    message.timestamp = dictionary["timestamp"] as? Int
-                    self.outputMessage(message)
-                    
-                }
-            }, withCancel: nil)
+            Message.fetchMessage(with: mesageID, completion: { (message) in
+                self.outputMessage(message)
+            })
         }, withCancel: nil)
         
     }
@@ -166,8 +170,11 @@ class ChatLogController: UICollectionViewController {
         
         cell.message = message
         
-        let estimatedCellSize = estimateFrameForText(text: message.text!)
-        cell.bubbleWidthAnchor?.constant = estimatedCellSize.width + 30
+        if let text = message.text {
+            let estimatedCellSize = estimateFrameForText(text: text)
+            cell.bubbleWidthAnchor?.constant = estimatedCellSize.width + 30
+        }
+        
         cell.bubbleView.layer.cornerRadius = 16
         cell.bubbleView.layer.masksToBounds = true
         return cell
@@ -184,6 +191,9 @@ class ChatLogController: UICollectionViewController {
             cell.orientation = .right
             cell.chatText.textColor = .white
             
+        }
+        if let imageUrl = message.imageUrl {
+            cell.bubbleView.backgroundColor = .clear
         }
     }
     
@@ -258,4 +268,93 @@ extension ChatLogController {
         return inputContainerView
     }
     
+}
+
+
+extension ChatLogController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    
+    @objc func handleUploadTap() {
+        let imagePicker = UIImagePickerController()
+        imagePicker.delegate = self
+        imagePicker.allowsEditing = true
+        imagePicker.sourceType = UIImagePickerControllerSourceType.photoLibrary
+//        imagePicker.mediaTypes = [kUTTypeImage as String]
+        self.present(imagePicker, animated: true, completion: nil)
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true, completion:nil)
+    }
+    
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+        
+        var selectedImageFromPicker: UIImage?
+        
+        self.dismiss(animated: true, completion: nil)
+        // Take the image
+        if let editedImage = info[UIImagePickerControllerEditedImage] as! UIImage? {
+            selectedImageFromPicker = editedImage
+        } else if let originalImage = info[UIImagePickerControllerOriginalImage] as! UIImage? {
+            selectedImageFromPicker = originalImage
+        }
+        // set it on the view
+//        imageView.image = image
+        if let selectedImage = selectedImageFromPicker {
+            //save it
+            uploadToFirebase(usingImage: selectedImage)
+            let photoURL = saveImageToFile(selectedImage)
+            print(photoURL)
+        }
+        
+        
+    }
+    
+    fileprivate func uploadToFirebase(usingImage image: UIImage) {
+        let imagePath = UUID.init().uuidString
+        let refStorage = Storage.storage().reference().child(StorageConstants.messageImages).child(imagePath)
+        if let imageData = UIImageJPEGRepresentation(image, 0.2) {
+            refStorage.putData(imageData, metadata: nil, completion: { (metadata, err) in
+                if err != nil {
+                    print(err?.localizedDescription ?? "unknown")
+                    return
+                }
+                if let messageImageUrl = (metadata?.downloadURL()?.absoluteString) {
+                    self.sendMessage(withImageUrl: messageImageUrl)
+                }
+            })
+        }
+    }
+    
+    fileprivate func sendMessage(withImageUrl url: String) {
+        let ref = DBConstants.getDB(reference: DBConstants.DBReferenceMessages)
+        let childRef = ref.childByAutoId()
+        guard let toId = self.user?.uid else { return }
+        let fromId = Auth.auth().currentUser!.uid
+        let timestamp: Int = Int(Date().timeIntervalSince1970)
+        let values = ["imageUrl": url, "toId": toId, "fromId": fromId, "timestamp": timestamp] as [String : Any]
+        childRef.updateChildValues(values) { (error, ref) in
+            if error != nil {
+                print(error!.localizedDescription)
+                return
+            }
+            
+            let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(fromId).child(toId)
+            let pertnermessagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(toId).child(fromId)
+            let messageID = childRef.key
+            messagesRef.updateChildValues([messageID : 1])
+            pertnermessagesRef.updateChildValues([messageID : 1])
+        }
+    }
+    fileprivate func saveImageToFile(_ image: UIImage) -> URL {
+        let filemng = FileManager.default
+        
+        let dirPaths = filemng.urls(for: .documentDirectory, in: .userDomainMask)
+        
+        let fileURL = dirPaths[0].appendingPathComponent("currentImage.jpg")
+        if let renderedJPEGData = UIImageJPEGRepresentation(image, 0.5) {
+            try! renderedJPEGData.write(to: fileURL)
+        }
+        
+        return fileURL
+    }
 }

@@ -39,21 +39,6 @@ class MessageController: UITableViewController {
         
     }
     
-    fileprivate func fetchMessage(with messageId : String) {
-        let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceMessages).child(messageId)
-        messagesRef.observeSingleEvent(of: .value, with: { (snapshot) in
-            if let dictionary = snapshot.value as? [String: Any] {
-                let message = Message()
-                message.fromId = dictionary["fromId"] as? String
-                message.text = dictionary["text"] as? String
-                message.toId = dictionary["toId"] as? String
-                message.timestamp = dictionary["timestamp"] as? Int
-                self.outputMessage(message)
-                
-                self.attemptReloadTable()
-            }
-        }, withCancel: nil)
-    }
     
     func observeUserMessages() {
         
@@ -64,10 +49,17 @@ class MessageController: UITableViewController {
         ref.observe(.childAdded, with: { (snapshot) in
             let partnerId = snapshot.key
             let refPartnerID = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(id).child(partnerId)
-            refPartnerID.queryOrdered(byChild: "timestamp").queryLimited(toLast: 1).observe(.childAdded, with: {
+            refPartnerID.observe(.childAdded, with: {
                 userMessageSnapshot in
                 let messageId = userMessageSnapshot.key
-                self.fetchMessage(with: messageId)
+                Message.fetchMessage(with: messageId) {
+                    message in
+                    
+                    self.outputMessage(message)
+                    self.attemptReloadTable()
+                }
+                
+                
             }, withCancel: nil)
             
         }, withCancel: nil)

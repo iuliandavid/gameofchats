@@ -34,3 +34,8 @@ let dateFormatter : DateFormatter = {
     formater.dateFormat = "HH:mm:ss"
     return formater
 }()
+
+struct StorageConstants {
+    static let profileImages = "profile_images"
+    static let messageImages = "message_images"
+}

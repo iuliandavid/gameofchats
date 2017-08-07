@@ -93,7 +93,7 @@ extension LoginController {
                 }
                 //persist image to storage
                 let imagePath = "\(uid)/\(Int(Date.timeIntervalSinceReferenceDate * 1000)).jpg"
-                let storage = Storage.storage().reference().child("profile_images").child(imagePath)
+                let storage = Storage.storage().reference().child(StorageConstants.profileImages).child(imagePath)
                 if let imageData = UIImageJPEGRepresentation(self.profileImageView.image!, 0.2) {
                     storage.putData(imageData, metadata: nil, completion: { (metadata, err) in
                         if err != nil {

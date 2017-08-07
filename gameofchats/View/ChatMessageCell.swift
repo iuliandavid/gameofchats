@@ -53,8 +53,6 @@ class ChatMessageCell: UICollectionViewCell {
     let bubbleView : UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
-        
-        view.backgroundColor = blueColor
         return view
     }()
     
@@ -63,7 +61,18 @@ class ChatMessageCell: UICollectionViewCell {
 //        imageView.image = UIImage(named: "tyrion")
         imageView.layer.cornerRadius = 16
         imageView.clipsToBounds = true
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        return imageView
+    }()
+    
+    let messageImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.layer.cornerRadius = 10
+        imageView.clipsToBounds = true
+        imageView.layer.masksToBounds = true
         imageView.contentMode = .scaleAspectFill
+        imageView.isUserInteractionEnabled = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
@@ -75,8 +84,9 @@ class ChatMessageCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
         self.addSubview(bubbleView)
+        self.addSubview(messageImageView)
         self.addSubview(chatText)
-        self.addSubview(profileImageView)
+        bubbleView.addSubview(profileImageView)
         
         // need x, y, width and height constraints
         profileImageView.leftAnchor.constraint(equalTo: self.leftAnchor, constant: 8).isActive = true
@@ -100,13 +110,31 @@ class ChatMessageCell: UICollectionViewCell {
         chatText.topAnchor.constraint(equalTo: self.topAnchor).isActive = true
         chatText.rightAnchor.constraint(equalTo: bubbleView.rightAnchor).isActive = true
         chatText.heightAnchor.constraint(equalTo: self.heightAnchor).isActive = true
+        
+        // need x, y, width and height constraints
+        messageImageView.leftAnchor.constraint(equalTo: bubbleView.leftAnchor).isActive = true
+        messageImageView.topAnchor.constraint(equalTo: bubbleView.topAnchor).isActive = true
+        messageImageView.widthAnchor.constraint(equalTo: bubbleView.widthAnchor).isActive = true
+        messageImageView.heightAnchor.constraint(equalTo: bubbleView.heightAnchor).isActive = true
     }
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
     
     private func updateCell() {
-        chatText.text = message?.text
+        if let imageUrl = message?.imageUrl {
+            FirebaseAPI.getImageFromFirebase(profileImageURL: imageUrl, completion: { (image) in
+                self.messageImageView.isHidden = false
+                self.messageImageView.image = image
+                self.chatText.isHidden = true
+                
+            })
+        } else {
+            self.messageImageView.isHidden = true
+            self.chatText.isHidden = false
+            chatText.text = message?.text
+            
+        }
 //        chatText.sizeToFit()
     }
 }
