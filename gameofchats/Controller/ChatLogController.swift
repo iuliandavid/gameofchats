@@ -120,8 +120,8 @@ class ChatLogController: UICollectionViewController {
                 return
             }
             
-            let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(fromId)
-            let pertnermessagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(toId)
+            let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(fromId).child(toId)
+            let pertnermessagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(toId).child(fromId)
             let messageID = childRef.key
             messagesRef.updateChildValues([messageID : 1])
             pertnermessagesRef.updateChildValues([messageID : 1])
@@ -134,7 +134,7 @@ class ChatLogController: UICollectionViewController {
     func observeMessages(){
         guard let uid = user?.uid else { return }
         guard let authId = Auth.auth().currentUser?.uid else { return }
-        let ref = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(authId)
+        let ref = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(authId).child(uid)
         
         ref.observe(.childAdded, with: { (userMessageSnapshot) in
             let mesageID = userMessageSnapshot.key
@@ -146,9 +146,8 @@ class ChatLogController: UICollectionViewController {
                     message.text = dictionary["text"] as? String
                     message.toId = dictionary["toId"] as? String
                     message.timestamp = dictionary["timestamp"] as? Int
-                    if message.chatPartnerId() == uid {
-                        self.outputMessage(message)
-                    }
+                    self.outputMessage(message)
+                    
                 }
             }, withCancel: nil)
         }, withCancel: nil)

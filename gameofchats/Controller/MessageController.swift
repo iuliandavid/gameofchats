@@ -39,36 +39,53 @@ class MessageController: UITableViewController {
         
     }
     
+    fileprivate func fetchMessage(with messageId : String) {
+        let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceMessages).child(messageId)
+        messagesRef.observeSingleEvent(of: .value, with: { (snapshot) in
+            if let dictionary = snapshot.value as? [String: Any] {
+                let message = Message()
+                message.fromId = dictionary["fromId"] as? String
+                message.text = dictionary["text"] as? String
+                message.toId = dictionary["toId"] as? String
+                message.timestamp = dictionary["timestamp"] as? Int
+                self.outputMessage(message)
+                
+                self.attemptReloadTable()
+            }
+        }, withCancel: nil)
+    }
+    
     func observeUserMessages() {
         
         guard let id = userUID else {
             return
         }
         let ref = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(id)
-       
-        ref.observe(.childAdded, with: { (userMessageSnapshot) in
-            let mesageID = userMessageSnapshot.key
-            let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceMessages).child(mesageID)
-            messagesRef.observeSingleEvent(of: .value, with: { (snapshot) in
-                if let dictionary = snapshot.value as? [String: Any] {
-                    let message = Message()
-                    message.fromId = dictionary["fromId"] as? String
-                    message.text = dictionary["text"] as? String
-                    message.toId = dictionary["toId"] as? String
-                    message.timestamp = dictionary["timestamp"] as? Int
-                    self.outputMessage(message)
-                    
-                    self.timer?.invalidate()
-                    
-                    self.timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.handleReloadTable), userInfo: nil, repeats: false)
-                }
+        ref.observe(.childAdded, with: { (snapshot) in
+            let partnerId = snapshot.key
+            let refPartnerID = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(id).child(partnerId)
+            refPartnerID.queryOrdered(byChild: "timestamp").queryLimited(toLast: 1).observe(.childAdded, with: {
+                userMessageSnapshot in
+                let messageId = userMessageSnapshot.key
+                self.fetchMessage(with: messageId)
             }, withCancel: nil)
+            
         }, withCancel: nil)
     }
-
+    
     var timer: Timer?
     
+    fileprivate func attemptReloadTable() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.handleReloadTable), userInfo: nil, repeats: false)
+    }
+    
     func handleReloadTable() {
+        self.messages = Array(self.messagesDictionary.values)
+        self.messages.sort { (message1, message2) -> Bool in
+            return message1.timestamp! > message2.timestamp!
+        }
+        configureTableView()
         DispatchQueue.main.async(execute: {
             print("Reloaded the table")
             self.tableView.reloadData()
@@ -175,12 +192,6 @@ class MessageController: UITableViewController {
     fileprivate func outputMessage(_ message: Message) {
         let id = message.chatPartnerId()
         messagesDictionary[id!] = message
-        configureTableView()
-        self.messages = Array(self.messagesDictionary.values)
-        self.messages.sort { (message1, message2) -> Bool in
-            return message1.timestamp! > message2.timestamp!
-        }
-//        tableView.reloadData()
     }
     
     func configureTableView() {
