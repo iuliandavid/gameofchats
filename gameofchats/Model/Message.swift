@@ -15,6 +15,8 @@ class Message: NSObject {
     var text: String?
     var timestamp: Int?
     var imageUrl: String?
+    var imageHeight: Int?
+    var imageWidth: Int?
     
     func chatPartnerId() -> String? {
         return fromId == Auth.auth().currentUser?.uid ? toId : fromId
@@ -22,16 +24,13 @@ class Message: NSObject {
     
     init(from dictionary: [String: Any]) {
         super.init()
-        
-        if let imageUrl = dictionary["imageUrl"] as? String {
-            self.imageUrl = imageUrl
-        } else {
-            self.text = dictionary["text"] as? String
-        }
-        self.fromId = dictionary["fromId"] as? String
-        
-        self.toId = dictionary["toId"] as? String
-        self.timestamp = dictionary["timestamp"] as? Int
+        imageUrl = dictionary["imageUrl"] as? String
+        text = dictionary["text"] as? String
+        fromId = dictionary["fromId"] as? String
+        toId = dictionary["toId"] as? String
+        timestamp = dictionary["timestamp"] as? Int
+        imageHeight = dictionary["imageHeight"] as? Int
+        imageWidth = dictionary["imageWidth"] as? Int
     }
     
     static func fetchMessage(with messageId : String, completion: @escaping (Message) -> Void) {

@@ -47,12 +47,15 @@ class ChatMessageCell: UICollectionViewCell {
         textView.translatesAutoresizingMaskIntoConstraints = false
         textView.textColor = .white
         textView.backgroundColor = .clear
+        textView.isEditable = false
         return textView
     }()
     
     let bubbleView : UIView = {
         let view = UIView()
         view.translatesAutoresizingMaskIntoConstraints = false
+        view.layer.cornerRadius = 16
+        view.layer.masksToBounds = true
         return view
     }()
     
@@ -61,16 +64,16 @@ class ChatMessageCell: UICollectionViewCell {
 //        imageView.image = UIImage(named: "tyrion")
         imageView.layer.cornerRadius = 16
         imageView.clipsToBounds = true
-        imageView.contentMode = .scaleAspectFit
+        imageView.contentMode = .scaleAspectFill
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
     
     let messageImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.layer.cornerRadius = 10
-        imageView.clipsToBounds = true
-        imageView.layer.masksToBounds = true
+//        imageView.layer.cornerRadius = 10
+//        imageView.clipsToBounds = true
+//        imageView.layer.masksToBounds = true
         imageView.contentMode = .scaleAspectFill
         imageView.isUserInteractionEnabled = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
@@ -84,9 +87,9 @@ class ChatMessageCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
         self.addSubview(bubbleView)
-        self.addSubview(messageImageView)
+        self.addSubview(profileImageView)
         self.addSubview(chatText)
-        bubbleView.addSubview(profileImageView)
+        bubbleView.addSubview(messageImageView)
         
         // need x, y, width and height constraints
         profileImageView.leftAnchor.constraint(equalTo: self.leftAnchor, constant: 8).isActive = true
@@ -123,12 +126,9 @@ class ChatMessageCell: UICollectionViewCell {
     
     private func updateCell() {
         if let imageUrl = message?.imageUrl {
-            FirebaseAPI.getImageFromFirebase(profileImageURL: imageUrl, completion: { (image) in
-                self.messageImageView.isHidden = false
-                self.messageImageView.image = image
-                self.chatText.isHidden = true
-                
-            })
+            self.messageImageView.loadImageUsingCache(withURLString: imageUrl)
+            self.messageImageView.isHidden = false
+            self.chatText.isHidden = true
         } else {
             self.messageImageView.isHidden = true
             self.chatText.isHidden = false

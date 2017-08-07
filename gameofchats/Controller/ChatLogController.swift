@@ -44,10 +44,22 @@ class ChatLogController: UICollectionViewController {
         //the collection scroll will follow the keyboard up and down selection
         collectionView?.keyboardDismissMode = .interactive
         
+        setupNotificationObservers()
+        
     }
     
+    func setupNotificationObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(handleKeyboardDidShow), name: NSNotification.Name.UIKeyboardDidShow, object: nil)
+    }
+    
+    @objc func handleKeyboardDidShow() {
+        if messages.count > 0 {
+            scrollToLastItem()
+        }
+    }
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        NotificationCenter.default.removeObserver(self)
     }
    
     lazy var inputContainerView: UIView = {
@@ -120,28 +132,8 @@ class ChatLogController: UICollectionViewController {
         guard let message = inputTextField.text else {
             return
         }
-        
-        let ref = DBConstants.getDB(reference: DBConstants.DBReferenceMessages)
-        let childRef = ref.childByAutoId()
-        guard let toId = user?.uid else { return }
-        let fromId = Auth.auth().currentUser!.uid
-        let timestamp: Int = Int(Date().timeIntervalSince1970)
-        let values = ["text": message, "toId": toId, "fromId": fromId, "timestamp": timestamp] as [String : Any]
-        childRef.updateChildValues(values) { (error, ref) in
-            if error != nil {
-                print(error!.localizedDescription)
-                return
-            }
-            
-            let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(fromId).child(toId)
-            let pertnermessagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(toId).child(fromId)
-            let messageID = childRef.key
-            messagesRef.updateChildValues([messageID : 1])
-            pertnermessagesRef.updateChildValues([messageID : 1])
-        }
-        
+        sendMessage(properties: ["text": message])
         inputTextField.text = nil
-        
     }
     
     func observeMessages(){
@@ -172,11 +164,11 @@ class ChatLogController: UICollectionViewController {
         
         if let text = message.text {
             let estimatedCellSize = estimateFrameForText(text: text)
-            cell.bubbleWidthAnchor?.constant = estimatedCellSize.width + 30
+            cell.bubbleWidthAnchor?.constant = estimatedCellSize.width + 32
+        } else if message.imageUrl != nil {
+            cell.bubbleWidthAnchor?.constant = 200
         }
         
-        cell.bubbleView.layer.cornerRadius = 16
-        cell.bubbleView.layer.masksToBounds = true
         return cell
     }
     
@@ -192,7 +184,7 @@ class ChatLogController: UICollectionViewController {
             cell.chatText.textColor = .white
             
         }
-        if let imageUrl = message.imageUrl {
+        if let _ = message.imageUrl {
             cell.bubbleView.backgroundColor = .clear
         }
     }
@@ -208,10 +200,37 @@ class ChatLogController: UICollectionViewController {
         
         DispatchQueue.main.async {
             self.collectionView?.reloadData()
-            let indexPath = IndexPath(item: self.messages.count - 1, section: 0)
-            self.collectionView?.scrollToItem(at: indexPath, at: .bottom, animated: true)
+            self.scrollToLastItem()
         }
         
+    }
+    
+    func scrollToLastItem() {
+        let indexPath = IndexPath(item: self.messages.count - 1, section: 0)
+        self.collectionView?.scrollToItem(at: indexPath, at: .bottom, animated: true)
+    }
+    
+    func sendMessage(properties: [String: Any]) {
+        let ref = DBConstants.getDB(reference: DBConstants.DBReferenceMessages)
+        let childRef = ref.childByAutoId()
+        guard let toId = self.user?.uid else { return }
+        let fromId = Auth.auth().currentUser!.uid
+        let timestamp: Int = Int(Date().timeIntervalSince1970)
+        var values = ["toId": toId, "fromId": fromId, "timestamp": timestamp] as [String : Any]
+        properties.forEach {values[$0] = $1}
+        
+        childRef.updateChildValues(values) { (error, ref) in
+            if error != nil {
+                print(error!.localizedDescription)
+                return
+            }
+            
+            let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(fromId).child(toId)
+            let pertnermessagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(toId).child(fromId)
+            let messageID = childRef.key
+            messagesRef.updateChildValues([messageID : 1])
+            pertnermessagesRef.updateChildValues([messageID : 1])
+        }
     }
     
 }
@@ -232,10 +251,15 @@ extension ChatLogController: UICollectionViewDelegateFlowLayout {
         
         // get estimated height
         let message = messages[indexPath.item]
+        let width = UIScreen.main.bounds.width
         if let textMessage = message.text {
             height = estimateFrameForText(text: textMessage).height + 30
+        } else if let imageHeight = message.imageHeight, let imageWidth = message.imageWidth {
+            // h1/w1 = h2/w2
+            // h1 = h2 / w2 * w1
+            height = round(CGFloat(imageHeight) / CGFloat(imageWidth) * CGFloat(200))
         }
-        let width = UIScreen.main.bounds.width
+        
         return CGSize(width: width, height: height)
     }
     
@@ -301,60 +325,40 @@ extension ChatLogController: UIImagePickerControllerDelegate, UINavigationContro
 //        imageView.image = image
         if let selectedImage = selectedImageFromPicker {
             //save it
-            uploadToFirebase(usingImage: selectedImage)
-            let photoURL = saveImageToFile(selectedImage)
-            print(photoURL)
+            guard let imageURL = uploadToFirebase(usingImage: selectedImage) else {
+                return
+            }
+            saveImageToCache(image: selectedImage, url: imageURL)
         }
         
         
     }
     
-    fileprivate func uploadToFirebase(usingImage image: UIImage) {
+    fileprivate func uploadToFirebase(usingImage image: UIImage) -> String? {
+        var imageURL: String?
         let imagePath = UUID.init().uuidString
         let refStorage = Storage.storage().reference().child(StorageConstants.messageImages).child(imagePath)
-        if let imageData = UIImageJPEGRepresentation(image, 0.2) {
+        if let imageData = UIImageJPEGRepresentation(image, 0.8) {
             refStorage.putData(imageData, metadata: nil, completion: { (metadata, err) in
                 if err != nil {
                     print(err?.localizedDescription ?? "unknown")
                     return
                 }
                 if let messageImageUrl = (metadata?.downloadURL()?.absoluteString) {
-                    self.sendMessage(withImageUrl: messageImageUrl)
+                    imageURL = messageImageUrl
+                    self.sendMessage(withImageUrl: messageImageUrl, image: image)
                 }
             })
         }
+        return imageURL
     }
     
-    fileprivate func sendMessage(withImageUrl url: String) {
-        let ref = DBConstants.getDB(reference: DBConstants.DBReferenceMessages)
-        let childRef = ref.childByAutoId()
-        guard let toId = self.user?.uid else { return }
-        let fromId = Auth.auth().currentUser!.uid
-        let timestamp: Int = Int(Date().timeIntervalSince1970)
-        let values = ["imageUrl": url, "toId": toId, "fromId": fromId, "timestamp": timestamp] as [String : Any]
-        childRef.updateChildValues(values) { (error, ref) in
-            if error != nil {
-                print(error!.localizedDescription)
-                return
-            }
-            
-            let messagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(fromId).child(toId)
-            let pertnermessagesRef = DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(toId).child(fromId)
-            let messageID = childRef.key
-            messagesRef.updateChildValues([messageID : 1])
-            pertnermessagesRef.updateChildValues([messageID : 1])
-        }
+    fileprivate func sendMessage(withImageUrl url: String, image: UIImage) {
+        sendMessage(properties: ["imageUrl": url, "imageHeight": Int(image.size.height), "imageWidth": Int(image.size.width)])
     }
-    fileprivate func saveImageToFile(_ image: UIImage) -> URL {
-        let filemng = FileManager.default
-        
-        let dirPaths = filemng.urls(for: .documentDirectory, in: .userDomainMask)
-        
-        let fileURL = dirPaths[0].appendingPathComponent("currentImage.jpg")
-        if let renderedJPEGData = UIImageJPEGRepresentation(image, 0.5) {
-            try! renderedJPEGData.write(to: fileURL)
-        }
-        
-        return fileURL
+    
+    
+    fileprivate func saveImageToCache(image: UIImage, url: String) {
+        imageCache.setObject(image, forKey:  NSString(string: url))
     }
 }

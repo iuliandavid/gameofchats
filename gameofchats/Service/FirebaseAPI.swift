@@ -25,24 +25,6 @@ class FirebaseAPI {
                 completion(UIImage.init(data: data))
                 
             }
-            
-            
-            // ios implementation
-            //        if let url = URL(string: profileImageURL) {
-            
-            //                        URLSession.shared.dataTask(with: url, completionHandler: { (data, response, err) in
-            //                            if let error = err {
-            //                                print("Error downloading: \(error)")
-            //                                return
-            //                            }
-            //                            guard let data = data else {
-            //                                return
-            //                            }
-            //                            DispatchQueue.main.async {
-            //                                cell.imageView?.image = UIImage.init(data: data)
-            //                            }
-            //                        }).resume()
-            //                }
         }
     }
 }
