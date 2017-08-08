@@ -235,6 +235,10 @@ class ChatLogController: UICollectionViewController {
         }
     }
     
+    //Zooming
+    var startingFrame: CGRect?
+    var blackBackgroundView: UIView?
+    var startingImageView: UIImageView?
 }
 
 extension ChatLogController : UITextFieldDelegate {
@@ -371,28 +375,32 @@ extension ChatLogController {
     
     func performZoomInForStartingImageView(startingImageView: UIImageView) {
         // 1. Set the UIImageView's frame to image
-        guard let startingFrame = startingImageView.superview?.convert(startingImageView.frame, to: nil),
-        let image = startingImageView.image else {
+        self.startingImageView = startingImageView
+        startingFrame = startingImageView.superview?.convert(startingImageView.frame, to: nil)
+        guard let image = startingImageView.image, let startingFrame = startingFrame else {
             return
         }
         let zoomingImageView = UIImageView(frame: startingFrame)
         zoomingImageView.image = image
+        zoomingImageView.isUserInteractionEnabled = true
+        zoomingImageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleZoomOutImage)))
         
         guard let keyWindow = UIApplication.shared.keyWindow else {
             return
         }
-        let blackBackgroundView = UIView(frame: keyWindow.frame)
-        blackBackgroundView.backgroundColor = .black
-        blackBackgroundView.alpha = 0
-        blackBackgroundView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleZoomImageTapped)))
-        keyWindow.addSubview(blackBackgroundView)
+        blackBackgroundView = UIView(frame: keyWindow.frame)
+        blackBackgroundView?.backgroundColor = .black
+        blackBackgroundView?.alpha = 0
+        blackBackgroundView?.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleZoomOutOnBackgroundTap)))
+        keyWindow.addSubview(blackBackgroundView!)
         
-        blackBackgroundView.addSubview(zoomingImageView)
-        
+        blackBackgroundView?.addSubview(zoomingImageView)
+        startingImageView.isHidden = true
         //2. zoom the view into center
         UIView.animate(withDuration: 0.5, delay: 0, options: UIViewAnimationOptions.curveEaseOut, animations: {
-            blackBackgroundView.alpha = 1
+            self.blackBackgroundView?.alpha = 1
             self.inputContainerView.alpha = 0
+            
             //height calculated from formula : h1 / w1 = h2 / w2
             let height = startingFrame.height / startingFrame.width * keyWindow.frame.width
             
@@ -403,11 +411,31 @@ extension ChatLogController {
         
     }
     
-    @objc private func handleZoomImageTapped(tapGesture: UITapGestureRecognizer) {
-        //2. zoom the view into center
-        UIView.animate(withDuration: 0.5, delay: 0, options: UIViewAnimationOptions.curveEaseIn, animations: {
+    //Should the user tap the black background
+    @objc private func handleZoomOutOnBackgroundTap(tapGesture: UITapGestureRecognizer) {
+        //1. zoom out by setting the alphas
+        UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 1, options: .curveEaseOut, animations: {
             tapGesture.view?.alpha = 0
             self.inputContainerView.alpha = 1
         }, completion: nil)
+    }
+    
+    @objc private func handleZoomOutImage(tapGesture: UITapGestureRecognizer) {
+        // 1. get the reference of the view tapped
+        guard let zoomOutImageView = tapGesture.view, let startingFrame = startingFrame else {
+            return
+        }
+        //2.animate back to controller
+        UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 1, options: .curveEaseOut, animations: {
+            //put back the zoomimage to original imageView position
+            zoomOutImageView.frame = startingFrame
+            self.blackBackgroundView?.alpha = 0
+            self.inputContainerView.alpha = 1
+            self.startingImageView?.isHidden = false
+        }, completion: { (completed) in
+            zoomOutImageView.removeFromSuperview()
+            
+        })
+        
     }
 }
