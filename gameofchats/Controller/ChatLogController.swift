@@ -173,6 +173,8 @@ class ChatLogController: UICollectionViewController {
             cell.bubbleWidthAnchor?.constant = 200
         }
         
+        cell.playButton.isHidden = message.videoUrl == nil
+        
         return cell
     }
     

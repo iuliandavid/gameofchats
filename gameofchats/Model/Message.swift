@@ -17,6 +17,7 @@ class Message: NSObject {
     var imageUrl: String?
     var imageHeight: Int?
     var imageWidth: Int?
+    var videoUrl: String?
     
     func chatPartnerId() -> String? {
         return fromId == Auth.auth().currentUser?.uid ? toId : fromId
@@ -31,6 +32,7 @@ class Message: NSObject {
         timestamp = dictionary["timestamp"] as? Int
         imageHeight = dictionary["imageHeight"] as? Int
         imageWidth = dictionary["imageWidth"] as? Int
+        videoUrl = dictionary["videoUrl"] as? String
     }
     
     static func fetchMessage(with messageId : String, completion: @escaping (Message) -> Void) {
