@@ -204,4 +204,10 @@ class ChatMessageCell: UICollectionViewCell {
         player?.pause()
         activityIndicatorView.stopAnimating()
     }
+    
+    deinit {
+        playerLayer?.removeFromSuperlayer()
+        player?.pause()
+        activityIndicatorView.stopAnimating()
+    }
 }

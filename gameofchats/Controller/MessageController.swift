@@ -36,7 +36,8 @@ class MessageController: UITableViewController {
         
         tableView.register(UserCell.self, forCellReuseIdentifier: Tables.messagesCellIdentifier)
         
-        
+        //add delete button functionality
+        tableView.allowsMultipleSelectionDuringEditing = true
     }
     
     
@@ -63,6 +64,11 @@ class MessageController: UITableViewController {
             }, withCancel: nil)
             
         }, withCancel: nil)
+        
+        ref.observe(.childRemoved, with: { snapshot in
+            self.messagesDictionary.removeValue(forKey: snapshot.key)
+            self.attemptReloadTable()
+        } , withCancel: nil)
     }
     
     var timer: Timer?
@@ -226,6 +232,28 @@ extension MessageController {
         }
         
         
+    }
+}
+
+//MARK: Delete conversations
+extension MessageController {
+    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
+        guard let id = userUID, let chatPartnerId = messages[indexPath.row].chatPartnerId() else {
+            return
+        }
+        
+        DBConstants.getDB(reference: DBConstants.DBReferenceUserMessages).child(id).child(chatPartnerId).removeValue { (error, ref) in
+            if error != nil {
+                print(error!.localizedDescription)
+                return
+            }
+            self.messagesDictionary.removeValue(forKey: chatPartnerId)
+            self.attemptReloadTable()
+        }
     }
 }
 

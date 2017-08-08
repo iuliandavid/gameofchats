@@ -61,7 +61,18 @@ class ChatLogController: UICollectionViewController {
     }
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        
+        //stop playing
+        
         NotificationCenter.default.removeObserver(self)
+//        print(collectionView?.indexPathsForSelectedItems)
+////        guard let indexPath = self.collectionView?.indexPathsForSelectedItems?[0] else { return }
+////        guard let cell = collectionView?.dequeueReusableCell(withReuseIdentifier: ChatCollection.chatCellIdentifier, for: indexPath) as? ChatMessageCell else {
+////            return
+////        }
+////        cell.playerLayer?.removeFromSuperlayer()
+////        cell.player?.pause()
+        
     }
     
     lazy var inputContainerView: UIView = {
