@@ -8,6 +8,8 @@
 
 import UIKit
 import Firebase
+import MobileCoreServices
+import AVFoundation
 
 class ChatLogController: UICollectionViewController {
     
@@ -61,7 +63,7 @@ class ChatLogController: UICollectionViewController {
         super.viewDidDisappear(animated)
         NotificationCenter.default.removeObserver(self)
     }
-   
+    
     lazy var inputContainerView: UIView = {
         let containerView = UIView()
         containerView.backgroundColor = .white
@@ -307,8 +309,7 @@ extension ChatLogController: UIImagePickerControllerDelegate, UINavigationContro
         let imagePicker = UIImagePickerController()
         imagePicker.delegate = self
         imagePicker.allowsEditing = true
-        imagePicker.sourceType = UIImagePickerControllerSourceType.photoLibrary
-//        imagePicker.mediaTypes = [kUTTypeImage as String]
+        imagePicker.mediaTypes = [kUTTypeImage as String, kUTTypeMovie as String]
         self.present(imagePicker, animated: true, completion: nil)
     }
     
@@ -316,32 +317,89 @@ extension ChatLogController: UIImagePickerControllerDelegate, UINavigationContro
         picker.dismiss(animated: true, completion:nil)
     }
     
-    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+    fileprivate func handleVideoSelected(_ fileUrl: URL) {
+        let fileName = "\(UUID.init().uuidString).mov"
+        let refStorage = Storage.storage().reference().child(StorageConstants.messageVideos).child(fileName)
+        let uploadTask = refStorage.putFile(from: fileUrl, metadata: nil, completion: { (metadata, error) in
+            if error != nil {
+                print(error!.localizedDescription)
+                return
+            }
+            if let videoUrl = (metadata?.downloadURL()?.absoluteString) {
+                // 1 . create thumbnail
+                if let thumbnailImage = self.getThumbnailImage(for: fileUrl) {
+                    self.uploadToFirebase(usingImage: thumbnailImage, completion: { (imageUrl) in
+                        let properties: [String : Any] = ["videoUrl": videoUrl, "imageUrl": imageUrl, "imageHeight": Int(thumbnailImage.size.height), "imageWidth": Int(thumbnailImage.size.width)]
+                        self.sendMessage(properties: properties)
+                    })
+                    
+                }
+            }
+        })
         
+        uploadTask.observe(.progress) { (snapshot) in
+            guard let progress = snapshot.progress?.completedUnitCount else {
+                return
+            }
+            self.navigationItem.title = String(describing: progress)
+            
+        }
+        
+        uploadTask.observe(.success) { (snapshot) in
+            self.navigationItem.title = self.user?.name
+            
+        }
+    }
+    
+    private func getThumbnailImage(for url: URL) -> UIImage? {
+        let asset = AVAsset(url: url)
+        let imageAssetGenerator = AVAssetImageGenerator(asset: asset)
+        
+        do {
+        let thumbnailCGImage = try imageAssetGenerator.copyCGImage(at: CMTimeMake(1, 60), actualTime: nil)
+            return UIImage(cgImage: thumbnailCGImage)
+        } catch let err {
+            print(err.localizedDescription)
+            return nil
+        }
+        
+    }
+    
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any]) {
+        //video
+        if let videoUrl = info[UIImagePickerControllerMediaURL] as? URL {
+            handleVideoSelected(videoUrl)
+        } else {
+            //image
+            handleSelectedImage(info: info)
+        }
+        self.dismiss(animated: true, completion: nil)
+    }
+    
+    private func handleSelectedImage(info: [String: Any]) {
         var selectedImageFromPicker: UIImage?
         
-        self.dismiss(animated: true, completion: nil)
         // Take the image
         if let editedImage = info[UIImagePickerControllerEditedImage] as! UIImage? {
             selectedImageFromPicker = editedImage
         } else if let originalImage = info[UIImagePickerControllerOriginalImage] as! UIImage? {
             selectedImageFromPicker = originalImage
         }
-        // set it on the view
-//        imageView.image = image
+        //        imageView.image = image
         if let selectedImage = selectedImageFromPicker {
             //save it
-            guard let imageURL = uploadToFirebase(usingImage: selectedImage) else {
-                return
-            }
-            saveImageToCache(image: selectedImage, url: imageURL)
+            uploadToFirebase(usingImage: selectedImage, completion: { (imageUrl) in
+                self.sendMessage(withImageUrl: imageUrl, image: selectedImage)
+                //put in cache
+                self.saveImageToCache(image: selectedImage, url: imageUrl)
+            })
+            
+            
         }
-        
-        
     }
     
-    fileprivate func uploadToFirebase(usingImage image: UIImage) -> String? {
-        var imageURL: String?
+    fileprivate func uploadToFirebase(usingImage image: UIImage, completion: @escaping (_ imageUrl: String) -> ()) {
+        
         let imagePath = UUID.init().uuidString
         let refStorage = Storage.storage().reference().child(StorageConstants.messageImages).child(imagePath)
         if let imageData = UIImageJPEGRepresentation(image, 0.8) {
@@ -351,16 +409,20 @@ extension ChatLogController: UIImagePickerControllerDelegate, UINavigationContro
                     return
                 }
                 if let messageImageUrl = (metadata?.downloadURL()?.absoluteString) {
-                    imageURL = messageImageUrl
-                    self.sendMessage(withImageUrl: messageImageUrl, image: image)
+                    completion(messageImageUrl)
+                    
                 }
             })
         }
-        return imageURL
+        
     }
     
     fileprivate func sendMessage(withImageUrl url: String, image: UIImage) {
         sendMessage(properties: ["imageUrl": url, "imageHeight": Int(image.size.height), "imageWidth": Int(image.size.width)])
+    }
+    
+    fileprivate func sendMessage(withVideoUrl url: String, video: UIImage) {
+        sendMessage(properties: ["videoUrl": url])
     }
     
     

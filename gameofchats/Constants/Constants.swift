@@ -38,4 +38,5 @@ let dateFormatter : DateFormatter = {
 struct StorageConstants {
     static let profileImages = "profile_images"
     static let messageImages = "message_images"
+    static let messageVideos = "message_videos"
 }
