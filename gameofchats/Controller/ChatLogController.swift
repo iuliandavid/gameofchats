@@ -162,6 +162,8 @@ class ChatLogController: UICollectionViewController {
         
         cell.message = message
         
+        cell.chatLogController = self
+        
         if let text = message.text {
             let estimatedCellSize = estimateFrameForText(text: text)
             cell.bubbleWidthAnchor?.constant = estimatedCellSize.width + 32
@@ -360,5 +362,52 @@ extension ChatLogController: UIImagePickerControllerDelegate, UINavigationContro
     
     fileprivate func saveImageToCache(image: UIImage, url: String) {
         imageCache.setObject(image, forKey:  NSString(string: url))
+    }
+}
+
+
+//MARK: Zoom logic
+extension ChatLogController {
+    
+    func performZoomInForStartingImageView(startingImageView: UIImageView) {
+        // 1. Set the UIImageView's frame to image
+        guard let startingFrame = startingImageView.superview?.convert(startingImageView.frame, to: nil),
+        let image = startingImageView.image else {
+            return
+        }
+        let zoomingImageView = UIImageView(frame: startingFrame)
+        zoomingImageView.image = image
+        
+        guard let keyWindow = UIApplication.shared.keyWindow else {
+            return
+        }
+        let blackBackgroundView = UIView(frame: keyWindow.frame)
+        blackBackgroundView.backgroundColor = .black
+        blackBackgroundView.alpha = 0
+        blackBackgroundView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleZoomImageTapped)))
+        keyWindow.addSubview(blackBackgroundView)
+        
+        blackBackgroundView.addSubview(zoomingImageView)
+        
+        //2. zoom the view into center
+        UIView.animate(withDuration: 0.5, delay: 0, options: UIViewAnimationOptions.curveEaseOut, animations: {
+            blackBackgroundView.alpha = 1
+            self.inputContainerView.alpha = 0
+            //height calculated from formula : h1 / w1 = h2 / w2
+            let height = startingFrame.height / startingFrame.width * keyWindow.frame.width
+            
+            zoomingImageView.frame = CGRect(x: 0, y: 0, width: keyWindow.frame.width, height: height)
+            zoomingImageView.center = keyWindow.center
+        }, completion: nil)
+        
+        
+    }
+    
+    @objc private func handleZoomImageTapped(tapGesture: UITapGestureRecognizer) {
+        //2. zoom the view into center
+        UIView.animate(withDuration: 0.5, delay: 0, options: UIViewAnimationOptions.curveEaseIn, animations: {
+            tapGesture.view?.alpha = 0
+            self.inputContainerView.alpha = 1
+        }, completion: nil)
     }
 }

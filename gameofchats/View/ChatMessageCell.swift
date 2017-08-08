@@ -28,6 +28,7 @@ class ChatMessageCell: UICollectionViewCell {
             profileImageView.loadImageUsingCache(withURLString: profileImageURL!)
         }
     }
+    
     var orientation: Orientation? {
         didSet {
             if orientation == .right {
@@ -61,7 +62,6 @@ class ChatMessageCell: UICollectionViewCell {
     
     let profileImageView: UIImageView = {
         let imageView = UIImageView()
-//        imageView.image = UIImage(named: "tyrion")
         imageView.layer.cornerRadius = 16
         imageView.clipsToBounds = true
         imageView.contentMode = .scaleAspectFill
@@ -69,16 +69,23 @@ class ChatMessageCell: UICollectionViewCell {
         return imageView
     }()
     
-    let messageImageView: UIImageView = {
+    lazy var messageImageView: UIImageView = {
         let imageView = UIImageView()
-//        imageView.layer.cornerRadius = 10
-//        imageView.clipsToBounds = true
-//        imageView.layer.masksToBounds = true
         imageView.contentMode = .scaleAspectFill
         imageView.isUserInteractionEnabled = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleZoomTap)))
         return imageView
     }()
+    
+    var chatLogController: ChatLogController?
+    
+    func handleZoomTap(tapGesture: UITapGestureRecognizer) {
+        guard let imageView = tapGesture.view as? UIImageView else {
+            return
+        }
+        chatLogController?.performZoomInForStartingImageView(startingImageView: imageView)
+    }
     
     var bubbleWidthAnchor: NSLayoutConstraint?
     var bubbleViewLeftAnchor: NSLayoutConstraint?
