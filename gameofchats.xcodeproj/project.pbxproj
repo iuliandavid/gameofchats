@@ -15,6 +15,7 @@
 		B80D39AD1F2E2C0D00A4C3FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B80D39AB1F2E2C0D00A4C3FF /* LaunchScreen.storyboard */; };
 		B83B63891F336DCA003F7B7C /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = B83B63881F336DCA003F7B7C /* Message.swift */; };
 		B8571A7C1F32042C00D46278 /* ChatLogController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8571A7B1F32042C00D46278 /* ChatLogController.swift */; };
+		B86D77FF1F39FE2000311F07 /* ChatInputContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B86D77FE1F39FE2000311F07 /* ChatInputContainerView.swift */; };
 		B87D96071F2F4CD2000B70E0 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B8E9E75D1F2ED0AA0074C611 /* GoogleService-Info.plist */; };
 		B87D960D1F2F9E10000B70E0 /* AppUser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B87D960C1F2F9E10000B70E0 /* AppUser.swift */; };
 		B8959E171F3194D40068E026 /* UIIMageView+extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8959E161F3194D40068E026 /* UIIMageView+extensions.swift */; };
@@ -41,6 +42,7 @@
 		B80D39AE1F2E2C0D00A4C3FF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B83B63881F336DCA003F7B7C /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		B8571A7B1F32042C00D46278 /* ChatLogController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ChatLogController.swift; path = Controller/ChatLogController.swift; sourceTree = "<group>"; };
+		B86D77FE1F39FE2000311F07 /* ChatInputContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInputContainerView.swift; sourceTree = "<group>"; };
 		B87D960C1F2F9E10000B70E0 /* AppUser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUser.swift; sourceTree = "<group>"; };
 		B8959E161F3194D40068E026 /* UIIMageView+extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIIMageView+extensions.swift"; sourceTree = "<group>"; };
 		B89F996F1F2E5159003117AA /* LoginController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = LoginController.swift; path = gameofchats/Controller/LoginController.swift; sourceTree = SOURCE_ROOT; };
@@ -131,6 +133,7 @@
 			children = (
 				B8C5F0941F34422D00F23CC9 /* ChatMessageCell.swift */,
 				B8C5F0961F34423E00F23CC9 /* UserCell.swift */,
+				B86D77FE1F39FE2000311F07 /* ChatInputContainerView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -316,6 +319,7 @@
 				B80D39A31F2E2C0D00A4C3FF /* AppDelegate.swift in Sources */,
 				B89F99701F2E5159003117AA /* LoginController.swift in Sources */,
 				B8E9E7611F2ED5660074C611 /* Constants.swift in Sources */,
+				B86D77FF1F39FE2000311F07 /* ChatInputContainerView.swift in Sources */,
 				B8C5F0991F34441C00F23CC9 /* NewMessageController.swift in Sources */,
 				B83B63891F336DCA003F7B7C /* Message.swift in Sources */,
 				B8C15CE61F3007A4008C77D2 /* LoginControllers+Handlers.swift in Sources */,
