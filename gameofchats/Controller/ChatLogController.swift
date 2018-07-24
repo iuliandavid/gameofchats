@@ -50,6 +50,10 @@ class ChatLogController: UICollectionViewController {
         }
     }
     override func viewDidDisappear(_ animated: Bool) {
+        messages.removeAll()
+        
+        self.collectionView = nil
+        
         super.viewDidDisappear(animated)
         
         //stop playing
@@ -212,7 +216,7 @@ extension ChatLogController: UICollectionViewDelegateFlowLayout {
         
         let size = CGSize(width: 200, height: height)
         let options = NSStringDrawingOptions.usesFontLeading.union(.usesLineFragmentOrigin)
-        let attributes = [NSFontAttributeName: UIFont.systemFont(ofSize: 16)]
+        let attributes = [NSAttributedStringKey.font: UIFont.systemFont(ofSize: 16)]
         
         return NSString(string: text).boundingRect(with: size, options: options, attributes: attributes, context: nil)
     }
@@ -430,4 +434,5 @@ extension ChatLogController {
         })
         
     }
+    
 }

@@ -78,7 +78,7 @@ class MessageController: UITableViewController {
         timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.handleReloadTable), userInfo: nil, repeats: false)
     }
     
-    func handleReloadTable() {
+    @objc func handleReloadTable() {
         self.messages = Array(self.messagesDictionary.values)
         self.messages.sort { (message1, message2) -> Bool in
             return message1.timestamp! > message2.timestamp!

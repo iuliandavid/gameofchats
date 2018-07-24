@@ -98,7 +98,7 @@ class ChatMessageCell: UICollectionViewCell {
     
     var chatLogController: ChatLogController?
     
-    func handleZoomTap(tapGesture: UITapGestureRecognizer) {
+    @objc func handleZoomTap(tapGesture: UITapGestureRecognizer) {
         if message?.videoUrl != nil {
             //TODO
             return
@@ -200,14 +200,17 @@ class ChatMessageCell: UICollectionViewCell {
     //Clean up cell when reusing
     override func prepareForReuse() {
         super.prepareForReuse()
-        playerLayer?.removeFromSuperlayer()
         player?.pause()
+        player = nil
+        playerLayer?.removeFromSuperlayer()
+        
         activityIndicatorView.stopAnimating()
     }
     
     deinit {
-        playerLayer?.removeFromSuperlayer()
         player?.pause()
+        player = nil
+        playerLayer?.removeFromSuperlayer()
         activityIndicatorView.stopAnimating()
     }
 }
